@@ -1,0 +1,1792 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HSK 3.0 Chinese Vocabulary Game</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Landing Page */
+        .landing-page {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: white;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .landing-page h1 {
+            font-size: 3rem;
+            margin-bottom: 2rem;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
+        }
+
+        .selection-container {
+            background: rgba(255,255,255,0.2);
+            padding: 30px;
+            border-radius: 20px;
+            backdrop-filter: blur(10px);
+            box-shadow: 0 8px 32px rgba(31,38,135,0.37);
+            border: 1px solid rgba(255,255,255,0.18);
+            margin-bottom: 20px;
+        }
+
+        .slider-container {
+            margin: 20px 0;
+        }
+
+        .slider-container label {
+            display: block;
+            margin-bottom: 10px;
+            font-size: 1.2rem;
+        }
+
+        .dual-range-container {
+            position: relative;
+            width: 300px;
+            height: 40px;
+            margin: 20px auto;
+            display: flex;
+            justify-content: center;
+        }
+
+        .range-slider {
+            position: absolute;
+            width: 100%;
+            -webkit-appearance: none;
+            height: 8px;
+            border-radius: 5px;
+            background: #ddd;
+            outline: none;
+            top: 16px;
+        }
+
+        .range-slider::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            position: relative;
+            z-index: 2;
+        }
+
+        .range-slider::-moz-range-thumb {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background: #4CAF50;
+            cursor: pointer;
+            border: none;
+        }
+
+        #endSlider {
+            background: transparent;
+        }
+
+        .range-values {
+            margin: 10px 0;
+            font-size: 1.1rem;
+        }
+
+        .tier-select {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+            margin: 20px 0;
+        }
+
+        .tier-select label {
+            font-size: 1.1rem;
+            color: white;
+        }
+
+        .tier-dropdown {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: 1px solid rgba(255,255,255,0.3);
+            border-radius: 6px;
+            padding: 8px 12px;
+            font-size: 1rem;
+            cursor: pointer;
+        }
+
+        .tier-dropdown option {
+            background: #333;
+            color: white;
+        }
+
+        .start-button {
+            background: linear-gradient(45deg, #4CAF50, #45a049);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            font-size: 1.2rem;
+            border-radius: 10px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .start-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.3);
+        }
+
+        /* Game Page */
+        .game-page {
+            display: none;
+            height: 100vh;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .score-bar {
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 15px;
+            text-align: center;
+            font-size: 1.5rem;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .menu-controls {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .menu-btn {
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: background 0.2s;
+        }
+
+        .menu-btn:hover {
+            background: rgba(255,255,255,0.3);
+        }
+
+        .menu-btn.exit {
+            background: rgba(255,100,100,0.6);
+            border: 1px solid rgba(255,100,100,0.8);
+        }
+
+        .menu-btn.exit:hover {
+            background: rgba(255,100,100,0.8);
+        }
+
+        .toggle-container {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            position: relative;
+        }
+
+        .info-icon {
+            width: 16px;
+            height: 16px;
+            background: rgba(255,255,255,0.7);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            font-weight: bold;
+            color: #333;
+            cursor: help;
+            position: relative;
+        }
+
+        .info-tooltip {
+            position: absolute;
+            bottom: 120%;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 8px;
+            font-size: 0.75rem;
+            white-space: nowrap;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.3s, visibility 0.3s;
+            z-index: 1001;
+        }
+
+        .info-tooltip::after {
+            content: '';
+            position: absolute;
+            top: 100%;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 6px solid transparent;
+            border-right: 6px solid transparent;
+            border-top: 6px solid rgba(0,0,0,0.9);
+        }
+
+        .info-icon:hover .info-tooltip {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 25px;
+            background: rgba(255,255,255,0.3);
+            border-radius: 25px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .toggle-switch.active {
+            background: #4CAF50;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 21px;
+            height: 21px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+
+        .toggle-switch.active .toggle-slider {
+            transform: translateX(25px);
+        }
+
+        .toggle-label {
+            font-size: 0.8rem;
+            color: white;
+        }
+
+        /* Settings Modal */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0,0,0,0.5);
+            backdrop-filter: blur(5px);
+        }
+
+        .modal-content {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            margin: 10% auto;
+            padding: 30px;
+            border-radius: 20px;
+            width: 80%;
+            max-width: 500px;
+            color: white;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        .modal h2 {
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .hotkey-setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 15px 0;
+            padding: 10px;
+            background: rgba(255,255,255,0.1);
+            border-radius: 10px;
+        }
+
+        .hotkey-input {
+            background: rgba(255,255,255,0.2);
+            border: 2px solid rgba(255,255,255,0.3);
+            padding: 8px 12px;
+            border-radius: 8px;
+            color: white;
+            width: 100px;
+            text-align: center;
+            cursor: pointer;
+            font-weight: bold;
+        }
+
+        .hotkey-input:focus {
+            border-color: #4CAF50;
+            background: rgba(255,255,255,0.3);
+            outline: none;
+        }
+
+        .hotkey-input.listening {
+            border-color: #FF9800;
+            background: rgba(255, 152, 0, 0.2);
+            animation: pulse 1s infinite;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.7; }
+            100% { opacity: 1; }
+        }
+
+        .close-btn {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 1rem;
+            margin: 20px auto 0;
+            display: block;
+        }
+
+        .stars-counter {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .star-icon {
+            color: gold;
+            font-size: 1.8rem;
+        }
+
+        /* Fire Streak Icon */
+        .fire-streak {
+            position: fixed;
+            font-size: 1.5rem;
+            opacity: 0;
+            visibility: hidden;
+            transition: all 0.3s ease;
+            animation: flicker 2s infinite;
+            z-index: 100;
+            pointer-events: none;
+        }
+
+        .fire-streak.visible {
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .fire-streak.streak-5 {
+            font-size: 2rem;
+            opacity: 1;
+            visibility: visible;
+        }
+
+        .fire-streak.streak-15 {
+            font-size: 2.5rem;
+            opacity: 1;
+            visibility: visible;
+            color: #FF4500;
+            animation: flicker 2s infinite, rockFire 1s infinite;
+        }
+
+        @keyframes flicker {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        @keyframes rockFire {
+            0%, 100% { transform: rotate(-5deg); }
+            50% { transform: rotate(5deg); }
+        }
+
+        /* Chinese Characters Row */
+        .characters-row {
+            height: 200px;
+            position: relative;
+            overflow: hidden;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(0,0,0,0.1);
+        }
+
+        .character-container {
+            position: absolute;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255,255,255,0.9);
+            border-radius: 15px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+            transition: all 0.5s ease;
+            min-width: 120px;
+            max-width: 200px;
+            height: 150px;
+            border: 3px solid transparent;
+            padding: 10px;
+            box-sizing: border-box;
+        }
+
+        .character-container.active {
+            border-color: #4CAF50;
+            transform: scale(1.3);
+            z-index: 10;
+            box-shadow: 0 8px 16px rgba(76, 175, 80, 0.4);
+            left: 50% !important;
+            transform: translateX(-50%) scale(1.3);
+        }
+
+        .character-container.next {
+            transform: scale(1.0);
+            opacity: 0.9;
+        }
+
+        .character-container.upcoming {
+            transform: scale(0.8);
+            opacity: 0.7;
+        }
+
+        .pinyin {
+            font-size: 0.9rem;
+            color: #666;
+            margin-bottom: 5px;
+            text-align: center;
+            word-wrap: break-word;
+        }
+
+        .chinese-char {
+            font-size: 2rem;
+            font-weight: bold;
+            color: #333;
+            text-align: center;
+            word-wrap: break-word;
+            line-height: 1.2;
+        }
+
+        .character-container.active .chinese-char {
+            font-size: 2.5rem;
+        }
+
+        /* English Options Grid */
+        .options-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+
+        .options-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 15px;
+            width: min(80vw, 800px);
+            height: min(60vh, 500px);
+        }
+
+        .option-btn {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border: none;
+            border-radius: 15px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+            color: white;
+            text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
+            padding: 15px 10px;
+            min-height: 80px;
+        }
+
+        .option-btn span {
+            font-size: clamp(0.8rem, 2vw, 1.2rem);
+            text-align: center;
+            line-height: 1.2;
+            word-wrap: break-word;
+            overflow-wrap: break-word;
+            hyphens: auto;
+            max-width: 100%;
+        }
+
+        .option-btn:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 16px rgba(0,0,0,0.3);
+        }
+
+        /* Material Tiers */
+        .tier-bronze {
+            background: linear-gradient(145deg, #CD7F32, #8B4513);
+            box-shadow: 0 4px 8px rgba(205, 127, 50, 0.4);
+            border: 3px solid #B87333;
+            color: #2F1B14;
+            font-weight: bold;
+        }
+
+        .tier-silver {
+            background: linear-gradient(145deg, #C0C0C0, #A8A8A8);
+            box-shadow: 0 4px 8px rgba(192, 192, 192, 0.4);
+            border: 3px solid #909090;
+            color: #333;
+            font-weight: bold;
+        }
+
+        .tier-gold {
+            background: linear-gradient(145deg, #FFD700, #FFA500);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.6);
+            border: 3px solid #FF8C00;
+            color: #8B4513;
+            font-weight: bold;
+            animation: goldGlow 2s ease-in-out infinite alternate;
+        }
+
+        @keyframes goldGlow {
+            from { box-shadow: 0 4px 12px rgba(255, 215, 0, 0.6); }
+            to { box-shadow: 0 6px 20px rgba(255, 215, 0, 0.8); }
+        }
+
+        .progress-bar {
+            position: absolute;
+            bottom: 5px;
+            left: 10px;
+            right: 10px;
+            height: 12px;
+            background: rgba(0,0,0,0.3);
+            border-radius: 6px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #4CAF50, #45a049);
+            border-radius: 6px;
+            transition: width 0.3s ease;
+            position: relative;
+        }
+
+        .progress-count {
+            position: absolute;
+            top: -25px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.8);
+            color: white;
+            padding: 2px 8px;
+            border-radius: 10px;
+            font-size: 0.8rem;
+            font-weight: bold;
+        }
+
+        .hotkey {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.7);
+            color: white;
+            width: 25px;
+            height: 25px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.9rem;
+            font-weight: bold;
+        }
+
+        /* Animations */
+        @keyframes correct {
+            0% { transform: scale(1); }
+            25% { transform: scale(1.1); background: #4CAF50; box-shadow: 0 0 20px #4CAF50; }
+            50% { transform: scale(1.2) rotate(5deg); }
+            75% { transform: scale(1.1) rotate(-5deg); }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes incorrect {
+            0% { transform: translateX(0) rotate(0deg); }
+            20% { transform: translateX(-10px) rotate(-5deg); background: #F44336; }
+            40% { transform: translateX(10px) rotate(5deg); }
+            60% { transform: translateX(-8px) rotate(-3deg); }
+            80% { transform: translateX(8px) rotate(3deg); }
+            100% { transform: translateX(0) rotate(0deg); }
+        }
+
+        @keyframes slideLeft {
+            from { transform: translateX(0); opacity: 1; }
+            to { transform: translateX(-200px); opacity: 0; }
+        }
+
+        @keyframes floatUp {
+            from { 
+                transform: translateY(0) scale(1); 
+                opacity: 1; 
+            }
+            to { 
+                transform: translateY(-50px) scale(1.2); 
+                opacity: 0; 
+            }
+        }
+
+        @keyframes newWordEntry {
+            0% { 
+                transform: scale(0) rotateY(90deg); 
+                opacity: 0; 
+            }
+            50% { 
+                transform: scale(1.1) rotateY(0deg); 
+                opacity: 1; 
+            }
+            100% { 
+                transform: scale(1) rotateY(0deg); 
+                opacity: 1; 
+            }
+        }
+
+        @keyframes tierUp {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.2) rotate(10deg); box-shadow: 0 0 30px currentColor; }
+            100% { transform: scale(1) rotate(0deg); }
+        }
+
+        @keyframes starShoot {
+            0% { 
+                transform: scale(0) rotate(0deg); 
+                opacity: 0; 
+                color: #FFD700;
+            }
+            30% { 
+                transform: scale(1.5) rotate(180deg); 
+                opacity: 1; 
+                color: #FFD700;
+                text-shadow: 0 0 20px #FFD700;
+            }
+            70% { 
+                transform: scale(2) rotate(360deg) translateY(-30px); 
+                opacity: 1; 
+                color: #FFF700;
+                text-shadow: 0 0 30px #FFD700;
+            }
+            100% { 
+                transform: scale(1) rotate(540deg) translateY(0px); 
+                opacity: 1; 
+                color: #FFD700;
+            }
+        }
+
+        .correct-animation {
+            animation: correct 0.8s ease;
+        }
+
+        .incorrect-animation {
+            animation: incorrect 0.8s ease;
+        }
+
+        .slide-left {
+            animation: slideLeft 0.5s ease;
+        }
+
+        .float-up {
+            animation: floatUp 1s ease;
+        }
+
+        .new-word-entry {
+            animation: newWordEntry 0.8s ease;
+        }
+
+        .tier-up {
+            animation: tierUp 0.8s ease;
+        }
+
+        .star-shoot {
+            animation: starShoot 1.2s ease;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .options-grid {
+                width: 90vw;
+                height: 300px;
+                gap: 10px;
+            }
+            
+            .option-btn {
+                font-size: 0.9rem;
+            }
+            
+            .landing-page h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <h1>HSK 3.0 Chinese Vocabulary</h1>
+        <div class="selection-container">
+            <div class="slider-container">
+                <label>Select HSK Band:</label>
+                <select class="tier-dropdown" id="bandSelector" onchange="changeBand()">
+                    <option value="1" selected>Band 1</option>
+                    <option value="2">Band 2</option>
+                    <option value="3">Band 3</option>
+                </select>
+            </div>
+            <div class="slider-container">
+                <label>Select Word Range:</label>
+                <div class="dual-range-container">
+                    <input type="range" id="startSlider" class="range-slider" min="1" max="50" value="1">
+                    <input type="range" id="endSlider" class="range-slider" min="1" max="50" value="50">
+                </div>
+                <div class="range-values">
+                    Words: <span id="startValue">1</span> - <span id="endValue">50</span>
+                    (<span id="totalWords">50</span> total)
+                </div>
+            </div>
+            <div class="tier-select">
+                <label>Correct answers needed to tier up:</label>
+                <select class="tier-dropdown" id="landingTierRequirement">
+                    <option value="1">1</option>
+                    <option value="2">2</option>
+                    <option value="3">3</option>
+                    <option value="4">4</option>
+                    <option value="5" selected>5</option>
+                    <option value="6">6</option>
+                    <option value="7">7</option>
+                    <option value="8">8</option>
+                    <option value="9">9</option>
+                    <option value="10">10</option>
+                    <option value="11">11</option>
+                    <option value="12">12</option>
+                    <option value="13">13</option>
+                    <option value="14">14</option>
+                    <option value="15">15</option>
+                    <option value="16">16</option>
+                    <option value="17">17</option>
+                    <option value="18">18</option>
+                    <option value="19">19</option>
+                    <option value="20">20</option>
+                </select>
+            </div>
+            <button class="start-button" onclick="startGame(false)">Custom Selection</button>
+            <button class="start-button" onclick="startGame(true)" id="allWordsButton">All Words (Band 1)</button>
+        </div>
+    </div>
+
+    <!-- Game Page -->
+    <div class="game-page" id="gamePage">
+        <div class="score-bar">
+            <div class="menu-controls">
+                <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
+                <button class="menu-btn" onclick="openSettings()">Change Hotkeys</button>
+                <div class="toggle-container">
+                    <span class="toggle-label">Easy Mode</span>
+                    <div class="toggle-switch" id="easyModeToggle" onclick="toggleEasyMode()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <div class="info-icon">
+                        i
+                        <div class="info-tooltip">Prevents losing tiers on wrong answers</div>
+                    </div>
+                </div>
+                <div class="toggle-container">
+                    <span class="toggle-label">Traditional</span>
+                    <div class="toggle-switch" id="traditionalToggle" onclick="toggleTraditional()">
+                        <div class="toggle-slider"></div>
+                    </div>
+                    <div class="info-icon">
+                        i
+                        <div class="info-tooltip">Switch between simplified and traditional characters</div>
+                    </div>
+                </div>
+            </div>
+            <div>Progress: <span id="completedWords">0</span> / <span id="totalWordsGame">0</span></div>
+            <div class="stars-counter">
+                <span class="star-icon" id="starIcon">⭐</span>
+                <span id="starsCount">0</span>
+            </div>
+        </div>
+        
+        <!-- Fire Streak Icon -->
+        <div class="fire-streak" id="fireStreak">🔥</div>
+        
+        <div class="characters-row" id="charactersRow"></div>
+        
+        <div class="options-container">
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+    </div>
+
+    <!-- Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>Hotkey Settings</h2>
+            <div id="hotkeySettings"></div>
+            <button class="close-btn" onclick="closeSettings()">Save & Close</button>
+        </div>
+    </div>
+
+    <!-- Load HSK Word Data Files -->
+    <script src="band-1-words.js"></script>
+    <script src="band-2-words.js"></script>
+    <script src="band-3-words.js"></script>
+
+    <script>
+        // HSK Words - loaded from separate JS files
+        const hskBands = {
+            1: typeof hskBand1 !== 'undefined' ? hskBand1 : [],
+            2: typeof hskBand2 !== 'undefined' ? hskBand2 : [],
+            3: typeof hskBand3 !== 'undefined' ? hskBand3 : []
+        };
+
+        let hskWords = [];
+        let currentBand = 1;
+        let useTraditional = false; // Toggle for traditional characters
+
+        // Load HSK words from embedded data
+        function loadHSKWords(band = 1) {
+            try {
+                if (hskBands[band] && hskBands[band].length > 0) {
+                    hskWords = hskBands[band];
+                    console.log(`Loaded ${hskWords.length} words from HSK Band ${band}`);
+                    
+                    // Update button text to show correct range
+                    const allWordsButton = document.getElementById('allWordsButton');
+                    if (allWordsButton) {
+                        allWordsButton.textContent = `All Words (Band ${band})`;
+                    }
+                    
+                    // Update slider max values based on loaded words
+                    const maxWords = hskWords.length;
+                    document.getElementById('startSlider').max = maxWords;
+                    document.getElementById('endSlider').max = maxWords;
+                    document.getElementById('endSlider').value = Math.min(50, maxWords);
+                    updateSliderValues();
+                    
+                    return true;
+                } else {
+                    throw new Error(`Band ${band} not available or empty`);
+                }
+            } catch (error) {
+                console.error('Failed to load HSK words:', error);
+                // Fallback to Band 1 if other bands fail
+                hskWords = hskBands[1] || [];
+                console.log('Using fallback wordlist');
+                return false;
+            }
+        }
+
+        // Helper function to get Chinese character (simplified or traditional)
+        function getChineseChar(word) {
+            return useTraditional && word.traditional ? word.traditional : word.chinese;
+        }
+
+        // Game State
+        let gameState = {
+            selectedWords: [],
+            currentWords: [],
+            activeWordIndex: 0,
+            wordProgress: {},
+            starsEarned: 0,
+            completedWords: 0,
+            charactersOnScreen: [],
+            optionButtons: [],
+            currentOptions: [],
+            hotkeys: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'], // Default numpad layout
+            streakCount: 0,
+            lastAnswerTime: 0,
+            alreadyPenalized: false,
+            easyMode: false, // Toggle for tier demotion
+            tierRequirement: 5 // How many correct answers needed to tier up
+        };
+
+        // Audio using multiple methods for better compatibility
+        function playPronunciation(text) {
+            // Method 1: Try creating audio element with Google TTS
+            try {
+                const audio = new Audio();
+                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=zh&client=tw-ob&ttsspeed=0.8`;
+                audio.src = url;
+                audio.play().catch(() => {
+                    // Method 2: Try Speech Synthesis as fallback
+                    fallbackTTS(text);
+                });
+            } catch (error) {
+                // Method 3: Direct fallback if audio creation fails
+                fallbackTTS(text);
+            }
+        }
+
+        function fallbackTTS(text) {
+            try {
+                const utterance = new SpeechSynthesisUtterance(text);
+                utterance.lang = 'zh-CN';
+                utterance.rate = 0.8;
+                utterance.volume = 1.0;
+                speechSynthesis.cancel(); // Clear any pending speech
+                speechSynthesis.speak(utterance);
+            } catch (error) {
+                console.log('Speech synthesis failed for:', text);
+            }
+        }
+
+        // Sound Effects
+        function playSound(type) {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            let frequencies, duration;
+            
+            switch(type) {
+                case 'correct':
+                    frequencies = [523, 659, 784]; // C, E, G chord
+                    duration = 0.3;
+                    break;
+                case 'incorrect':
+                    frequencies = [196, 220]; // Dissonant low notes
+                    duration = 0.5;
+                    break;
+                case 'complete':
+                    frequencies = [523, 659, 784, 1047]; // C major with high C
+                    duration = 0.8;
+                    break;
+                case 'tierUp':
+                    frequencies = [440, 554, 659]; // A, C#, E - triumph chord
+                    duration = 0.6;
+                    break;
+                case 'starShoot':
+                    frequencies = [523, 659, 784, 1047, 1319]; // Rising star sound
+                    duration = 1.0;
+                    break;
+                default:
+                    frequencies = [440];
+                    duration = 0.3;
+            }
+            
+            frequencies.forEach((frequency, index) => {
+                const oscillator = audioContext.createOscillator();
+                const gainNode = audioContext.createGain();
+                
+                oscillator.connect(gainNode);
+                gainNode.connect(audioContext.destination);
+                
+                oscillator.frequency.value = frequency;
+                oscillator.type = type === 'incorrect' ? 'sawtooth' : 'sine';
+                
+                const startTime = audioContext.currentTime + (index * 0.1);
+                gainNode.gain.setValueAtTime(0.2, startTime);
+                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                
+                oscillator.start(startTime);
+                oscillator.stop(startTime + duration);
+            });
+        }
+
+        // Landing Page Logic
+        document.getElementById('startSlider').oninput = function() {
+            updateSliderValues();
+        };
+        document.getElementById('endSlider').oninput = function() {
+            updateSliderValues();
+        };
+
+        function updateSliderValues() {
+            const start = parseInt(document.getElementById('startSlider').value);
+            const end = parseInt(document.getElementById('endSlider').value);
+            
+            if (start > end) {
+                document.getElementById('endSlider').value = start;
+            }
+            
+            const finalStart = Math.min(start, end);
+            const finalEnd = Math.max(start, end);
+            
+            document.getElementById('startValue').textContent = finalStart;
+            document.getElementById('endValue').textContent = finalEnd;
+            document.getElementById('totalWords').textContent = finalEnd - finalStart + 1;
+        }
+
+        function startGame(allWords) {
+            // Check if words are loaded
+            if (hskWords.length === 0) {
+                alert('Please wait for the wordlist to load, then try again.');
+                return;
+            }
+            
+            let startIndex, endIndex;
+            
+            if (allWords) {
+                startIndex = 1;
+                endIndex = hskWords.length; // Use all available words
+            } else {
+                startIndex = parseInt(document.getElementById('startSlider').value);
+                endIndex = parseInt(document.getElementById('endSlider').value);
+            }
+            
+            // Get tier requirement from landing page
+            gameState.tierRequirement = parseInt(document.getElementById('landingTierRequirement').value);
+            
+            // Select words for the game
+            gameState.selectedWords = hskWords.slice(startIndex - 1, endIndex);
+            gameState.currentWords = gameState.selectedWords.slice(0, Math.min(10, gameState.selectedWords.length));
+            
+            // Initialize word progress - start with bronze
+            gameState.wordProgress = {};
+            gameState.selectedWords.forEach(word => {
+                gameState.wordProgress[word.chinese] = { count: 0, tier: 'bronze' };
+            });
+            
+            // Initialize game state
+            gameState.starsEarned = 0;
+            gameState.completedWords = 0;
+            gameState.activeWordIndex = 0;
+            gameState.charactersOnScreen = [];
+            gameState.streakCount = 0;
+            gameState.lastAnswerTime = 0;
+            gameState.alreadyPenalized = false;
+            
+            // Update UI
+            document.getElementById('totalWordsGame').textContent = gameState.selectedWords.length;
+            document.getElementById('completedWords').textContent = gameState.completedWords;
+            document.getElementById('starsCount').textContent = gameState.starsEarned;
+            
+            // Switch to game page
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('gamePage').style.display = 'flex';
+            
+            // Initialize game
+            initializeGame();
+        }
+
+        function initializeGame() {
+            setupCharactersRow();
+            setupOptionsGrid();
+            setupKeyboardListeners();
+        }
+
+        function setupCharactersRow() {
+            const charactersRow = document.getElementById('charactersRow');
+            charactersRow.innerHTML = '';
+            
+            // Clear existing characters
+            gameState.charactersOnScreen = [];
+            
+            // Create 8 characters - active in center, others trailing left
+            for (let i = 0; i < 8; i++) {
+                const word = getRandomCurrentWord();
+                const container = document.createElement('div');
+                
+                if (i === 0) {
+                    // First character is active (center)
+                    container.className = 'character-container active';
+                    gameState.activeWordIndex = 0;
+                    setTimeout(() => playPronunciation(getChineseChar(word)), 300);
+                } else if (i <= 2) {
+                    container.className = 'character-container next';
+                } else {
+                    container.className = 'character-container upcoming';
+                }
+                
+                container.innerHTML = `
+                    <div class="pinyin">${word.pinyin}</div>
+                    <div class="chinese-char">${getChineseChar(word)}</div>
+                `;
+                
+                // Calculate container width based on content
+                const chineseText = getChineseChar(word);
+                const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+                container.style.width = `${estimatedWidth}px`;
+                
+                charactersRow.appendChild(container);
+                gameState.charactersOnScreen.push({ element: container, word: word, width: estimatedWidth });
+            }
+            
+            // Position all containers with proper spacing
+            positionCharacterContainers();
+        }
+
+        function positionCharacterContainers() {
+            if (gameState.charactersOnScreen.length === 0) return;
+            
+            const minGap = 20; // Minimum gap between containers
+            let positions = []; // Array to store center positions
+            
+            // Start with the active character at screen center
+            positions[0] = window.innerWidth / 2;
+            
+            // Calculate positions from center outward
+            for (let i = 1; i < gameState.charactersOnScreen.length; i++) {
+                const currentContainer = gameState.charactersOnScreen[i];
+                const prevContainer = gameState.charactersOnScreen[i - 1];
+                
+                // Calculate minimum distance needed to avoid overlap
+                const currentHalfWidth = currentContainer.width / 2;
+                const prevHalfWidth = prevContainer.width / 2;
+                const minDistance = prevHalfWidth + currentHalfWidth + minGap;
+                
+                // Position to the left of the previous container
+                positions[i] = positions[i - 1] - minDistance;
+            }
+            
+            // Apply positions and styling
+            gameState.charactersOnScreen.forEach((char, index) => {
+                const container = char.element;
+                container.className = 'character-container';
+                
+                if (index === 0) {
+                    container.classList.add('active');
+                    container.style.left = `${positions[index]}px`;
+                    container.style.transform = 'translateX(-50%) scale(1.3)';
+                    gameState.activeWordIndex = 0;
+                } else if (index <= 2) {
+                    container.classList.add('next');
+                    container.style.left = `${positions[index]}px`;
+                    container.style.transform = 'translateX(-50%)';
+                } else {
+                    container.classList.add('upcoming');
+                    container.style.left = `${positions[index]}px`;
+                    container.style.transform = 'translateX(-50%)';
+                }
+            });
+        }
+
+        function getRandomCurrentWord() {
+            return gameState.currentWords[Math.floor(Math.random() * gameState.currentWords.length)];
+        }
+
+        function setupOptionsGrid() {
+            const optionsGrid = document.getElementById('optionsGrid');
+            optionsGrid.innerHTML = '';
+            gameState.optionButtons = [];
+            gameState.currentOptions = [];
+            
+            // Create 10 option buttons
+            for (let i = 0; i < 10; i++) {
+                const word = i < gameState.currentWords.length ? gameState.currentWords[i] : null;
+                const button = document.createElement('button');
+                button.className = 'option-btn tier-bronze';
+                
+                if (word) {
+                    const progress = gameState.wordProgress[word.chinese];
+                    button.className = `option-btn tier-${progress.tier}`;
+                    
+                    button.innerHTML = `
+                        <span>${word.english}</span>
+                        <div class="progress-count">${progress.count}/${gameState.tierRequirement}</div>
+                        <div class="progress-bar">
+                            <div class="progress-fill" style="width: ${(progress.count % gameState.tierRequirement) * (100/gameState.tierRequirement)}%"></div>
+                        </div>
+                        <div class="hotkey">${gameState.hotkeys[i]}</div>
+                    `;
+                    
+                    button.onclick = () => selectOption(i);
+                    gameState.currentOptions[i] = word;
+                } else {
+                    button.innerHTML = `
+                        <span>---</span>
+                        <div class="hotkey">${gameState.hotkeys[i]}</div>
+                    `;
+                    button.style.opacity = '0.5';
+                    gameState.currentOptions[i] = null;
+                }
+                
+                optionsGrid.appendChild(button);
+                gameState.optionButtons.push(button);
+            }
+        }
+
+        function selectOption(optionIndex) {
+            const selectedWord = gameState.currentOptions[optionIndex];
+            const activeCharacter = gameState.charactersOnScreen[gameState.activeWordIndex];
+            
+            if (!selectedWord || !activeCharacter) return;
+            
+            const isCorrect = selectedWord.chinese === activeCharacter.word.chinese;
+            const button = gameState.optionButtons[optionIndex];
+            const currentTime = Date.now();
+            
+            if (isCorrect) {
+                // Check for streak (fast answers)
+                const timeDiff = currentTime - gameState.lastAnswerTime;
+                if (timeDiff < 1000 && gameState.lastAnswerTime > 0) { // Less than 1 second
+                    gameState.streakCount++;
+                    updateFireIcon();
+                } else {
+                    gameState.streakCount = 1; // Reset but count this one
+                    updateFireIcon();
+                }
+                gameState.lastAnswerTime = currentTime;
+                
+                handleCorrectAnswer(selectedWord, button, optionIndex);
+                gameState.alreadyPenalized = false; // Reset penalty flag for new character
+            } else {
+                gameState.streakCount = 0; // Break streak on wrong answer
+                updateFireIcon();
+                handleIncorrectAnswer(activeCharacter.word, optionIndex);
+                highlightCorrectAnswer(activeCharacter.word);
+            }
+        }
+
+        function updateFireIcon() {
+            const fireIcon = document.getElementById('fireStreak');
+            
+            // Reset all classes
+            fireIcon.className = 'fire-streak';
+            
+            if (gameState.streakCount >= 15) {
+                fireIcon.classList.add('visible', 'streak-15');
+                positionFireIcon();
+            } else if (gameState.streakCount >= 5) {
+                fireIcon.classList.add('visible', 'streak-5');
+                positionFireIcon();
+            } else if (gameState.streakCount >= 3) {
+                fireIcon.classList.add('visible');
+                positionFireIcon();
+            }
+            // If streak < 3, fire icon remains hidden (no classes added)
+        }
+
+        function positionFireIcon() {
+            const fireIcon = document.getElementById('fireStreak');
+            const activeChar = gameState.charactersOnScreen[gameState.activeWordIndex];
+            
+            if (activeChar) {
+                const activeElement = activeChar.element;
+                const rect = activeElement.getBoundingClientRect();
+                
+                // Calculate position: vertically centered with active character
+                const centerY = rect.top + rect.height / 2;
+                
+                // Horizontally: between active character right edge and screen right edge
+                const activeRight = rect.right;
+                const screenRight = window.innerWidth;
+                const centerX = activeRight + (screenRight - activeRight) / 2;
+                
+                fireIcon.style.top = `${centerY}px`;
+                fireIcon.style.left = `${centerX}px`;
+                fireIcon.style.transform = 'translate(-50%, -50%)';
+            }
+        }
+
+        function handleCorrectAnswer(word, button, optionIndex) {
+            playSound('correct');
+            button.classList.add('correct-animation');
+            
+            const progress = gameState.wordProgress[word.chinese];
+            progress.count++;
+            
+            // Check for tier progression
+            let tierChanged = false;
+            const req = gameState.tierRequirement;
+            
+            if (progress.count === req && progress.tier === 'bronze') {
+                progress.tier = 'silver';
+                tierChanged = true;
+            } else if (progress.count === req * 2 && progress.tier === 'silver') {
+                progress.tier = 'gold';
+                tierChanged = true;
+            } else if (progress.count === req * 3 && progress.tier === 'gold') {
+                // Word completed - add star and replace with new word IMMEDIATELY
+                createStarAnimation(button);
+                playStarShootAnimation();
+                playSound('starShoot');
+                
+                // IMMEDIATELY reset button to bronze and replace word
+                addNewWordToRotation(word, optionIndex);
+                
+                gameState.starsEarned++;
+                gameState.completedWords++;
+                updateUI();
+                
+                if (gameState.completedWords === gameState.selectedWords.length) {
+                    setTimeout(() => alert('Congratulations! You completed all words!'), 1000);
+                    return;
+                }
+                
+                // Don't call updateOptionButton since we've already replaced the word
+                removeActiveCharacterAndAdvance();
+                setTimeout(() => button.classList.remove('correct-animation'), 800);
+                return;
+            }
+            
+            // Play tier up animation and sound
+            if (tierChanged) {
+                button.classList.add('tier-up');
+                playSound('tierUp');
+                setTimeout(() => button.classList.remove('tier-up'), 800);
+            }
+            
+            updateOptionButton(optionIndex, word, progress);
+            removeActiveCharacterAndAdvance();
+            
+            setTimeout(() => button.classList.remove('correct-animation'), 800);
+        }
+
+        function playStarShootAnimation() {
+            const starIcon = document.getElementById('starIcon');
+            starIcon.classList.add('star-shoot');
+            setTimeout(() => starIcon.classList.remove('star-shoot'), 1200);
+        }
+
+        function handleIncorrectAnswer(correctWord, selectedOptionIndex) {
+            // Only penalize if NOT in easy mode
+            if (!gameState.easyMode) {
+                // Penalize the CORRECT word's button, not the selected one
+                if (gameState.alreadyPenalized) return; // Only penalize once per character
+                
+                gameState.alreadyPenalized = true;
+                
+                // Find the correct word's button
+                let correctOptionIndex = -1;
+                for (let i = 0; i < gameState.currentOptions.length; i++) {
+                    if (gameState.currentOptions[i] && gameState.currentOptions[i].chinese === correctWord.chinese) {
+                        correctOptionIndex = i;
+                        break;
+                    }
+                }
+                
+                if (correctOptionIndex !== -1) {
+                    const correctButton = gameState.optionButtons[correctOptionIndex];
+                    correctButton.classList.add('incorrect-animation');
+                    
+                    const progress = gameState.wordProgress[correctWord.chinese];
+                    // Demote tier
+                    if (progress.tier === 'gold') progress.tier = 'silver';
+                    else if (progress.tier === 'silver') progress.tier = 'bronze';
+                    // Bronze stays bronze (can't go lower)
+                    
+                    updateOptionButton(correctOptionIndex, correctWord, progress);
+                    setTimeout(() => correctButton.classList.remove('incorrect-animation'), 800);
+                }
+            }
+            
+            playSound('incorrect');
+        }
+
+        function highlightCorrectAnswer(correctWord) {
+            gameState.optionButtons.forEach((button, index) => {
+                const option = gameState.currentOptions[index];
+                if (option && option.chinese === correctWord.chinese) {
+                    button.style.border = '3px solid #4CAF50';
+                    setTimeout(() => button.style.border = '', 1500);
+                }
+            });
+        }
+
+        function updateOptionButton(optionIndex, word, progress) {
+            const button = gameState.optionButtons[optionIndex];
+            button.className = `option-btn tier-${progress.tier}`;
+            
+            const progressPercent = (progress.count % gameState.tierRequirement) * (100/gameState.tierRequirement);
+            const progressFill = button.querySelector('.progress-fill');
+            const progressCount = button.querySelector('.progress-count');
+            
+            if (progressFill) {
+                progressFill.style.width = `${progressPercent}%`;
+            }
+            if (progressCount) {
+                progressCount.textContent = `${progress.count}/${gameState.tierRequirement}`;
+            }
+        }
+
+        function createStarAnimation(button) {
+            // Create floating star animation
+            const star = document.createElement('div');
+            star.innerHTML = '⭐';
+            star.className = 'float-up';
+            star.style.position = 'absolute';
+            star.style.fontSize = '2rem';
+            star.style.left = '50%';
+            star.style.top = '50%';
+            star.style.transform = 'translate(-50%, -50%)';
+            star.style.pointerEvents = 'none';
+            star.style.zIndex = '1000';
+            
+            button.style.position = 'relative';
+            button.appendChild(star);
+            
+            setTimeout(() => {
+                if (star.parentNode) star.parentNode.removeChild(star);
+            }, 1000);
+        }
+
+        function addNewWordToRotation(completedWord, optionIndex) {
+            // Find a new word that hasn't been completed yet
+            const availableWords = gameState.selectedWords.filter(word => 
+                gameState.wordProgress[word.chinese].count < gameState.tierRequirement * 3 &&
+                !gameState.currentWords.some(w => w.chinese === word.chinese)
+            );
+            
+            // Remove completed word from current rotation
+            gameState.currentWords = gameState.currentWords.filter(word => 
+                word.chinese !== completedWord.chinese
+            );
+            
+            // Remove completed word from character rotation too
+            removeCompletedWordFromCharacters(completedWord.chinese);
+            
+            // Add a new word if available
+            if (availableWords.length > 0) {
+                const newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+                gameState.currentWords.push(newWord);
+                
+                // Replace the specific option button with new word (reset to bronze)
+                gameState.currentOptions[optionIndex] = newWord;
+                const progress = gameState.wordProgress[newWord.chinese];
+                
+                const button = gameState.optionButtons[optionIndex];
+                button.classList.add('new-word-entry');
+                button.className = 'option-btn tier-bronze new-word-entry';
+                
+                button.innerHTML = `
+                    <span>${newWord.english}</span>
+                    <div class="progress-count">${progress.count}/${gameState.tierRequirement}</div>
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: ${(progress.count % gameState.tierRequirement) * (100/gameState.tierRequirement)}%"></div>
+                    </div>
+                    <div class="hotkey">${gameState.hotkeys[optionIndex]}</div>
+                `;
+                
+                setTimeout(() => button.classList.remove('new-word-entry'), 800);
+            } else {
+                // No more words available for this slot
+                gameState.currentOptions[optionIndex] = null;
+                const button = gameState.optionButtons[optionIndex];
+                button.className = 'option-btn tier-bronze';
+                button.innerHTML = `
+                    <span>COMPLETE</span>
+                    <div class="hotkey">${gameState.hotkeys[optionIndex]}</div>
+                `;
+                button.style.opacity = '0.5';
+            }
+        }
+
+        function removeCompletedWordFromCharacters(completedWordChinese) {
+            // Remove all instances of the completed word from the character row
+            gameState.charactersOnScreen = gameState.charactersOnScreen.filter(char => {
+                if (char.word.chinese === completedWordChinese) {
+                    char.element.classList.add('slide-left');
+                    setTimeout(() => {
+                        if (char.element.parentNode) {
+                            char.element.parentNode.removeChild(char.element);
+                        }
+                    }, 500);
+                    return false;
+                }
+                return true;
+            });
+            
+            // Replenish character row
+            while (gameState.charactersOnScreen.length < 8) {
+                const word = getRandomCurrentWord();
+                const container = document.createElement('div');
+                container.className = 'character-container upcoming';
+                container.innerHTML = `
+                    <div class="pinyin">${word.pinyin}</div>
+                    <div class="chinese-char">${getChineseChar(word)}</div>
+                `;
+                
+                // Calculate container width based on content
+                const chineseText = getChineseChar(word);
+                const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+                container.style.width = `${estimatedWidth}px`;
+                
+                const charactersRow = document.getElementById('charactersRow');
+                charactersRow.appendChild(container);
+                gameState.charactersOnScreen.push({ element: container, word: word, width: estimatedWidth });
+            }
+            
+            // Reposition all characters with proper spacing
+            positionCharacterContainers();
+            
+            // Play pronunciation for new active character
+            if (gameState.charactersOnScreen.length > 0) {
+                setTimeout(() => playPronunciation(getChineseChar(gameState.charactersOnScreen[0].word)), 300);
+            }
+        }
+
+        function removeActiveCharacterAndAdvance() {
+            // Find and remove characters with the same word as active
+            const activeChar = gameState.charactersOnScreen[gameState.activeWordIndex];
+            if (!activeChar) return;
+            
+            const activeWord = activeChar.word;
+            
+            // Remove only the FIRST matching character (not all duplicates)
+            let removedOne = false;
+            gameState.charactersOnScreen.forEach(char => {
+                if (char.word.chinese === activeWord.chinese && !removedOne) {
+                    char.element.classList.add('slide-left');
+                    setTimeout(() => {
+                        if (char.element.parentNode) {
+                            char.element.parentNode.removeChild(char.element);
+                        }
+                    }, 500);
+                    removedOne = true;
+                }
+            });
+            
+            // Filter out only the first removed character
+            let foundFirst = false;
+            gameState.charactersOnScreen = gameState.charactersOnScreen.filter(char => {
+                if (char.word.chinese === activeWord.chinese && !foundFirst) {
+                    foundFirst = true;
+                    return false; // Remove this one
+                }
+                return true; // Keep all others
+            });
+            
+            // Maintain 8 characters by adding new ones
+            while (gameState.charactersOnScreen.length < 8) {
+                const word = getRandomCurrentWord();
+                const container = document.createElement('div');
+                container.className = 'character-container upcoming';
+                container.innerHTML = `
+                    <div class="pinyin">${word.pinyin}</div>
+                    <div class="chinese-char">${getChineseChar(word)}</div>
+                `;
+                
+                // Calculate container width based on content
+                const chineseText = getChineseChar(word);
+                const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+                container.style.width = `${estimatedWidth}px`;
+                
+                const charactersRow = document.getElementById('charactersRow');
+                charactersRow.appendChild(container);
+                gameState.charactersOnScreen.push({ element: container, word: word, width: estimatedWidth });
+            }
+            
+            // Reposition all characters with proper spacing
+            positionCharacterContainers();
+            
+            // Play pronunciation for new active character
+            if (gameState.charactersOnScreen.length > 0) {
+                setTimeout(() => playPronunciation(getChineseChar(gameState.charactersOnScreen[0].word)), 300);
+            }
+        }
+
+        function updateUI() {
+            document.getElementById('completedWords').textContent = gameState.completedWords;
+            document.getElementById('starsCount').textContent = gameState.starsEarned;
+        }
+
+        // Settings Functions
+        let listeningForInput = -1;
+        
+        function openSettings() {
+            const modal = document.getElementById('settingsModal');
+            const settingsContainer = document.getElementById('hotkeySettings');
+            
+            settingsContainer.innerHTML = '';
+            
+            gameState.hotkeys.forEach((key, index) => {
+                const setting = document.createElement('div');
+                setting.className = 'hotkey-setting';
+                setting.innerHTML = `
+                    <span>Button ${index + 1}:</span>
+                    <input type="text" class="hotkey-input" value="${key}" readonly
+                           onclick="startListening(${index})" 
+                           placeholder="Click to set">
+                `;
+                settingsContainer.appendChild(setting);
+            });
+            
+            modal.style.display = 'block';
+        }
+        
+        function startListening(index) {
+            listeningForInput = index;
+            const input = document.querySelectorAll('.hotkey-input')[index];
+            input.classList.add('listening');
+            input.value = 'Press any key...';
+            input.focus();
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+            listeningForInput = -1;
+            setupOptionsGrid(); // Refresh to show new hotkeys
+        }
+        
+        function updateHotkey(index, newKey) {
+            if (newKey.length >= 1) {
+                gameState.hotkeys[index] = newKey.toUpperCase();
+                const input = document.querySelectorAll('.hotkey-input')[index];
+                input.value = newKey.toUpperCase();
+                input.classList.remove('listening');
+                listeningForInput = -1;
+            }
+        }
+        
+        function returnToMenu() {
+            // Reset game state
+            gameState = {
+                selectedWords: [],
+                currentWords: [],
+                activeWordIndex: 0,
+                wordProgress: {},
+                starsEarned: 0,
+                completedWords: 0,
+                charactersOnScreen: [],
+                optionButtons: [],
+                currentOptions: [],
+                hotkeys: gameState.hotkeys, // Preserve hotkey settings
+                streakCount: 0,
+                lastAnswerTime: 0,
+                alreadyPenalized: false,
+                easyMode: gameState.easyMode, // Preserve easy mode setting
+                tierRequirement: 5 // Reset to default
+            };
+            
+            // Switch to landing page
+            document.getElementById('gamePage').style.display = 'none';
+            document.getElementById('landingPage').style.display = 'flex';
+        }
+
+        function toggleEasyMode() {
+            gameState.easyMode = !gameState.easyMode;
+            const toggle = document.getElementById('easyModeToggle');
+            
+            if (gameState.easyMode) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
+
+        function toggleTraditional() {
+            useTraditional = !useTraditional;
+            const toggle = document.getElementById('traditionalToggle');
+            
+            if (useTraditional) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+            
+            // Update all visible characters in real-time
+            updateCharacterDisplay();
+        }
+
+        function updateCharacterDisplay() {
+            // Update characters row
+            gameState.charactersOnScreen.forEach(char => {
+                const chineseCharElement = char.element.querySelector('.chinese-char');
+                if (chineseCharElement) {
+                    chineseCharElement.textContent = getChineseChar(char.word);
+                }
+                
+                // Recalculate container width if needed
+                const chineseText = getChineseChar(char.word);
+                const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+                char.width = estimatedWidth;
+                char.element.style.width = `${estimatedWidth}px`;
+            });
+            
+            // Reposition characters with new widths
+            positionCharacterContainers();
+        }
+
+        // Keyboard Controls
+        function setupKeyboardListeners() {
+            document.addEventListener('keydown', (event) => {
+                // Check if we're listening for hotkey input
+                if (listeningForInput !== -1) {
+                    event.preventDefault();
+                    updateHotkey(listeningForInput, event.key);
+                    return;
+                }
+                
+                // Check if any modal is open
+                if (document.getElementById('settingsModal').style.display === 'block') {
+                    if (event.key === 'Escape') {
+                        closeSettings();
+                    }
+                    return;
+                }
+                
+                const pressedKey = event.key.toUpperCase();
+                const optionIndex = gameState.hotkeys.indexOf(pressedKey);
+                
+                if (optionIndex !== -1) {
+                    event.preventDefault();
+                    selectOption(optionIndex);
+                }
+            });
+        }
+
+        // Band selection and word loading
+        async function changeBand() {
+            const bandSelector = document.getElementById('bandSelector');
+            const selectedBand = parseInt(bandSelector.value);
+            
+            // Show loading message
+            const startButtons = document.querySelectorAll('.start-button');
+            startButtons.forEach(btn => {
+                btn.disabled = true;
+                btn.textContent = 'Loading...';
+            });
+            
+            // Load the selected band
+            const success = await loadHSKWords(selectedBand);
+            
+            // Re-enable buttons
+            startButtons.forEach((btn, index) => {
+                btn.disabled = false;
+                btn.textContent = index === 0 ? 'Custom Selection' : `All Words (Band ${selectedBand})`;
+            });
+            
+            if (success) {
+                currentBand = selectedBand;
+            } else {
+                // Reset selector if loading failed
+                bandSelector.value = currentBand;
+                alert(`Failed to load Band ${selectedBand} wordlist. Using Band ${currentBand}.`);
+            }
+        }
+
+        // Initialize the app
+        async function initializeApp() {
+            // Load Band 1 by default
+            await loadHSKWords(1);
+            updateSliderValues();
+        }
+
+        // Initialize slider values on page load
+        updateSliderValues();
+        
+        // Load default wordlist when page loads
+        window.addEventListener('DOMContentLoaded', initializeApp);
+    </script>
+</body>
+</html>
