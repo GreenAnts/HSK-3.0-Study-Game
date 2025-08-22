@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>HSK 3.0 Chinese Vocabulary Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
     <style>
         * {
             margin: 0;
@@ -15,7 +17,8 @@
             font-family: 'Arial', sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             min-height: 100vh;
-            overflow: hidden;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Landing Page */
@@ -170,12 +173,61 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            position: relative;
         }
 
         .menu-controls {
             display: flex;
             gap: 10px;
             align-items: center;
+        }
+
+        .mobile-menu-toggle {
+            display: none;
+            background: rgba(255,255,255,0.2);
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 1.2rem;
+        }
+
+        .mobile-menu {
+            display: none;
+            position: absolute;
+            top: 100%;
+            left: 10px;
+            right: 10px;
+            background: rgba(0,0,0,0.95);
+            border-radius: 10px;
+            padding: 15px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+        }
+
+        .mobile-menu.active {
+            display: block;
+        }
+
+        .mobile-menu-content {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .mobile-menu-row {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            justify-content: space-between;
+        }
+
+        .progress-info {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex: 1;
         }
 
         .menu-btn {
@@ -326,22 +378,24 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin: 15px 0;
-            padding: 10px;
+            margin: 10px 0;
+            padding: 8px;
             background: rgba(255,255,255,0.1);
-            border-radius: 10px;
+            border-radius: 8px;
+            font-size: 0.9rem;
         }
 
         .hotkey-input {
             background: rgba(255,255,255,0.2);
             border: 2px solid rgba(255,255,255,0.3);
-            padding: 8px 12px;
-            border-radius: 8px;
+            padding: 6px 10px;
+            border-radius: 6px;
             color: white;
-            width: 100px;
+            width: 80px;
             text-align: center;
             cursor: pointer;
             font-weight: bold;
+            font-size: 0.8rem;
         }
 
         .hotkey-input:focus {
@@ -385,56 +439,41 @@
             font-size: 1.8rem;
         }
 
-        /* Fire Streak Icon */
-        .fire-streak {
+        /* Mascot Icon */
+        .mascot-icon {
             position: fixed;
-            font-size: 1.5rem;
-            opacity: 0;
-            visibility: hidden;
+            width: 150px;
+            height: 150px;
+            opacity: 1;
+            visibility: visible;
             transition: all 0.3s ease;
-            animation: flicker 2s infinite;
             z-index: 100;
             pointer-events: none;
         }
 
-        .fire-streak.visible {
-            opacity: 1;
-            visibility: visible;
+        .mascot-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
         }
-
-        .fire-streak.streak-5 {
-            font-size: 2rem;
-            opacity: 1;
-            visibility: visible;
+        #mascotImage {
+            position: relative;
+            top: -50px;
+            left: 215px;
+            width: 200px;
+            height: 200px;
         }
-
-        .fire-streak.streak-15 {
-            font-size: 2.5rem;
-            opacity: 1;
-            visibility: visible;
-            color: #FF4500;
-            animation: flicker 2s infinite, rockFire 1s infinite;
-        }
-
-        @keyframes flicker {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.7; }
-        }
-
-        @keyframes rockFire {
-            0%, 100% { transform: rotate(-5deg); }
-            50% { transform: rotate(5deg); }
-        }
-
+        
         /* Chinese Characters Row */
         .characters-row {
-            height: 200px;
+            height: 240px;
             position: relative;
             overflow: hidden;
             display: flex;
             align-items: center;
             justify-content: center;
             background: rgba(0,0,0,0.1);
+            padding: 30px 0;
         }
 
         .character-container {
@@ -467,11 +506,13 @@
         .character-container.next {
             transform: scale(1.0);
             opacity: 0.9;
+            z-index: 5;
         }
 
         .character-container.upcoming {
             transform: scale(0.8);
             opacity: 0.7;
+            z-index: 1;
         }
 
         .pinyin {
@@ -510,7 +551,7 @@
             grid-template-rows: repeat(4, 1fr);
             gap: 15px;
             width: min(80vw, 800px);
-            height: min(60vh, 500px);
+            height: min(65vh, 520px);
         }
 
         .option-btn {
@@ -527,8 +568,8 @@
             overflow: hidden;
             color: white;
             text-shadow: 1px 1px 2px rgba(0,0,0,0.5);
-            padding: 15px 10px;
-            min-height: 80px;
+            padding: 20px 15px;
+            min-height: 100px;
         }
 
         .option-btn span {
@@ -611,18 +652,19 @@
 
         .hotkey {
             position: absolute;
-            top: 10px;
-            right: 10px;
+            top: 5px;
+            right: 5px;
             background: rgba(0,0,0,0.7);
             color: white;
-            width: 25px;
-            height: 25px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 0.9rem;
+            font-size: 0.7rem;
             font-weight: bold;
+            z-index: 10;
         }
 
         /* Animations */
@@ -735,18 +777,207 @@
 
         /* Responsive */
         @media (max-width: 768px) {
+            .score-bar {
+                font-size: 1.2rem;
+                padding: 10px;
+            }
+
+            .menu-controls {
+                display: none;
+            }
+
+            .mobile-menu-toggle {
+                display: block;
+            }
+
+            .progress-info {
+                font-size: 1rem;
+            }
+
+            .stars-counter {
+                font-size: 1rem;
+            }
+
+            .star-icon {
+                font-size: 1.5rem;
+            }
+
+            /* Mobile character positioning and mascot */
+            .characters-row {
+                height: 200px;
+                padding: 15px 10px;
+            }
+
+            .mascot-icon {
+                right: 10px;
+                height: 70%;
+            }
+
+            .character-container {
+                min-width: 90px;
+                max-width: 130px;
+                height: 110px;
+                padding: 8px;
+            }
+
+            .character-container.active {
+                transform: translateX(-50%) scale(1.1);
+                z-index: 100;
+            }
+
+            .character-container.next {
+                transform: scale(0.8);
+                opacity: 0.8;
+                z-index: 5;
+            }
+
+            .character-container.upcoming {
+                transform: scale(0.6);
+                opacity: 0.6;
+                z-index: 1;
+            }
+
+            .pinyin {
+                font-size: 0.8rem;
+            }
+
+            .chinese-char {
+                font-size: 1.5rem;
+            }
+
+            .character-container.active .chinese-char {
+                font-size: 1.8rem;
+            }
+
             .options-grid {
                 width: 90vw;
-                height: 300px;
+                height: 400px;
                 gap: 10px;
             }
             
             .option-btn {
                 font-size: 0.9rem;
+                padding: 15px 10px;
+                min-height: 80px;
+                aspect-ratio: 1.2;
             }
             
+            /* Landing page mobile */
+            .landing-page {
+                padding: 10px;
+                min-height: 100vh;
+            }
+
             .landing-page h1 {
                 font-size: 2rem;
+                margin-bottom: 1.5rem;
+            }
+
+            .selection-container {
+                padding: 20px;
+                margin-bottom: 15px;
+                width: 100%;
+                max-width: 90vw;
+            }
+
+            .slider-container {
+                margin: 15px 0;
+            }
+
+            .slider-container label {
+                font-size: 1rem;
+                margin-bottom: 8px;
+            }
+
+            .dual-range-container {
+                width: 250px;
+                margin: 15px auto;
+            }
+
+            .range-values {
+                font-size: 1rem;
+            }
+
+            .tier-select {
+                margin: 15px 0;
+            }
+
+            .tier-select label {
+                font-size: 1rem;
+            }
+
+            .tier-dropdown {
+                padding: 6px 10px;
+                font-size: 0.9rem;
+                width: 100%;
+                max-width: 200px;
+            }
+
+            .start-button {
+                padding: 12px 25px;
+                font-size: 1rem;
+                margin: 8px;
+                width: calc(100% - 16px);
+                max-width: 300px;
+            }
+
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                margin: 5% auto;
+                padding: 20px;
+            }
+
+            .hotkey-setting {
+                margin: 8px 0;
+                padding: 6px;
+                font-size: 0.8rem;
+            }
+
+            .hotkey-input {
+                width: 60px;
+                padding: 4px 6px;
+                font-size: 0.7rem;
+            }
+
+            .toggle-container {
+                flex-direction: column;
+                gap: 4px;
+                align-items: center;
+            }
+
+            .toggle-label {
+                font-size: 0.7rem;
+            }
+
+            .toggle-switch {
+                width: 40px;
+                height: 20px;
+            }
+
+            .toggle-slider {
+                width: 16px;
+                height: 16px;
+                top: 2px;
+                left: 2px;
+            }
+
+            .toggle-switch.active .toggle-slider {
+                transform: translateX(20px);
+            }
+
+            /* Mobile mascot and hotkey adjustments */
+            .mascot-icon {
+                width: 110px;
+                height: 110px;
+            }
+
+            .hotkey {
+                width: 18px;
+                height: 18px;
+                font-size: 0.6rem;
+                top: 3px;
+                right: 3px;
             }
         }
     </style>
@@ -776,13 +1007,13 @@
                 </div>
             </div>
             <div class="tier-select">
-                <label>Correct answers needed to tier up:</label>
+                <label>Correct answers per tier:</label>
                 <select class="tier-dropdown" id="landingTierRequirement">
                     <option value="1">1</option>
                     <option value="2">2</option>
-                    <option value="3">3</option>
+                    <option value="3" selected>3</option>
                     <option value="4">4</option>
-                    <option value="5" selected>5</option>
+                    <option value="5">5</option>
                     <option value="6">6</option>
                     <option value="7">7</option>
                     <option value="8">8</option>
@@ -801,16 +1032,17 @@
                 </select>
             </div>
             <button class="start-button" onclick="startGame(false)">Custom Selection</button>
-            <button class="start-button" onclick="startGame(true)" id="allWordsButton">All Words (Band 1)</button>
+            <button class="start-button" onclick="startGame(true)" id="allWordsButton">All Words in Band</button>
         </div>
     </div>
 
     <!-- Game Page -->
     <div class="game-page" id="gamePage">
         <div class="score-bar">
+            <!-- Desktop menu controls -->
             <div class="menu-controls">
                 <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
-                <button class="menu-btn" onclick="openSettings()">Change Hotkeys</button>
+                <button class="menu-btn" onclick="openSettings()">Hotkeys</button>
                 <div class="toggle-container">
                     <span class="toggle-label">Easy Mode</span>
                     <div class="toggle-switch" id="easyModeToggle" onclick="toggleEasyMode()">
@@ -828,21 +1060,54 @@
                     </div>
                     <div class="info-icon">
                         i
-                        <div class="info-tooltip">Switch between simplified and traditional characters</div>
+                        <div class="info-tooltip">Simplified vs Traditional characters</div>
                     </div>
                 </div>
             </div>
-            <div>Progress: <span id="completedWords">0</span> / <span id="totalWordsGame">0</span></div>
+
+            <!-- Mobile menu toggle -->
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+
+            <!-- Progress info (centered on mobile) -->
+            <div class="progress-info">Progress: <span id="completedWords">0</span> / <span id="totalWordsGame">0</span></div>
+            
+            <!-- Stars counter -->
             <div class="stars-counter">
                 <span class="star-icon" id="starIcon">⭐</span>
                 <span id="starsCount">0</span>
             </div>
+
+            <!-- Mobile collapsible menu -->
+            <div class="mobile-menu" id="mobileMenu">
+                <div class="mobile-menu-content">
+                    <div class="mobile-menu-row">
+                        <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
+                        <button class="menu-btn" onclick="openSettings()">Hotkeys</button>
+                    </div>
+                    <div class="mobile-menu-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Easy Mode</span>
+                            <div class="toggle-switch" id="easyModeToggleMobile" onclick="toggleEasyMode()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Traditional</span>
+                            <div class="toggle-switch" id="traditionalToggleMobile" onclick="toggleTraditional()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
         
-        <!-- Fire Streak Icon -->
-        <div class="fire-streak" id="fireStreak">🔥</div>
-        
-        <div class="characters-row" id="charactersRow"></div>
+        <div class="characters-row" id="charactersRow">
+            <!-- Mascot container - independent styling, no inherited classes -->
+            <div class="mascot-container" id="mascotContainer">
+                <img id="mascotImage" src="idle.gif" alt="Mascot" />
+            </div>
+        </div>
         
         <div class="options-container">
             <div class="options-grid" id="optionsGrid"></div>
@@ -913,7 +1178,7 @@
             return useTraditional && word.traditional ? word.traditional : word.chinese;
         }
 
-        // Game State
+        // Game State with mascot animations and queue
         let gameState = {
             selectedWords: [],
             currentWords: [],
@@ -929,7 +1194,17 @@
             lastAnswerTime: 0,
             alreadyPenalized: false,
             easyMode: false, // Toggle for tier demotion
-            tierRequirement: 5 // How many correct answers needed to tier up
+            tierRequirement: 5, // How many correct answers needed to tier up
+            mascotAnimations: {
+                idle: 'idle.gif',
+                rally: 'rally.gif',
+                sad: 'sad.gif',
+                celebrate: 'celebrate.gif',
+                ouch: 'ouch.gif'
+            },
+            mascotAnimationQueue: [],
+            currentMascotAnimation: 'idle',
+            mascotAnimationPlaying: false
         };
 
         // Audio using multiple methods for better compatibility
@@ -1092,11 +1367,25 @@
             setupCharactersRow();
             setupOptionsGrid();
             setupKeyboardListeners();
+            
+            // Initialize mascot in idle state (positioned by CSS)
+            queueMascotAnimation('idle');
+        }
+
+        // Ensure mascot stays in idle when not animating
+        function ensureMascotIdle() {
+            // Only set to idle if no animations are queued or playing
+            if (!gameState.mascotAnimationPlaying && gameState.mascotAnimationQueue.length === 0) {
+                queueMascotAnimation('idle');
+            }
         }
 
         function setupCharactersRow() {
             const charactersRow = document.getElementById('charactersRow');
-            charactersRow.innerHTML = '';
+            
+            // Clear existing characters but preserve the mascot
+            const existingCharacters = charactersRow.querySelectorAll('.character-container:not(#mascotContainer)');
+            existingCharacters.forEach(char => char.remove());
             
             // Clear existing characters
             gameState.charactersOnScreen = [];
@@ -1131,53 +1420,131 @@
                 gameState.charactersOnScreen.push({ element: container, word: word, width: estimatedWidth });
             }
             
-            // Position all containers with proper spacing
+            // Position all containers with proper spacing (including mascot)
             positionCharacterContainers();
         }
 
         function positionCharacterContainers() {
             if (gameState.charactersOnScreen.length === 0) return;
             
-            const minGap = 20; // Minimum gap between containers
+            const isMobile = window.innerWidth <= 768;
+            const screenCenter = window.innerWidth / 2;
             let positions = []; // Array to store center positions
             
-            // Start with the active character at screen center
-            positions[0] = window.innerWidth / 2;
+            // Start with the active character at exact screen center
+            positions[0] = screenCenter;
             
-            // Calculate positions from center outward
+            // Calculate positions from center outward (all characters trail to the LEFT)
             for (let i = 1; i < gameState.charactersOnScreen.length; i++) {
                 const currentContainer = gameState.charactersOnScreen[i];
                 const prevContainer = gameState.charactersOnScreen[i - 1];
                 
-                // Calculate minimum distance needed to avoid overlap
-                const currentHalfWidth = currentContainer.width / 2;
-                const prevHalfWidth = prevContainer.width / 2;
-                const minDistance = prevHalfWidth + currentHalfWidth + minGap;
+                // Get base container widths
+                const currentWidth = currentContainer.width;
+                const prevWidth = prevContainer.width;
                 
-                // Position to the left of the previous container
+                let minDistance;
+                if (isMobile) {
+                    // Mobile: account for scaling and add generous spacing
+                    if (i === 1) {
+                        // Active (scale 1.1) to next (scale 0.8)
+                        const activeScaledWidth = prevWidth * 1.1;
+                        const nextScaledWidth = currentWidth * 0.8;
+                        minDistance = (activeScaledWidth / 2) + (nextScaledWidth / 2) + 50; // Fixed large gap
+                    } else if (i <= 2) {
+                        // Next (scale 0.8) to upcoming (scale 0.6)
+                        const nextScaledWidth = prevWidth * 0.8;
+                        const upcomingScaledWidth = currentWidth * 0.8;
+                        minDistance = (nextScaledWidth / 2) + (upcomingScaledWidth / 2) + 20;
+                    } else {
+                        // Upcoming characters (scale 0.6)
+                        const prevScaledWidth = prevWidth * 0.6;
+                        const currentScaledWidth = currentWidth * 0.6;
+                        minDistance = (prevScaledWidth / 2) + (currentScaledWidth / 2) + 15;
+                    }
+                } else {
+                    // Desktop: tighter, more precise spacing
+                    if (i === 1) {
+                        // Active (scale 1.3) to next (scale 1.0)
+                        const activeScaledWidth = prevWidth * 1.3;
+                        const nextWidth = currentWidth * 1.0;
+                        minDistance = (activeScaledWidth / 2) + (nextWidth / 2) + 25;
+                    } else {
+                        // Subsequent characters
+                        const prevScaledWidth = prevWidth * (i <= 2 ? 1.0 : 0.8);
+                        const currentScaledWidth = currentWidth * (i <= 2 ? 1.0 : 0.8);
+                        minDistance = (prevScaledWidth / 2) + (currentScaledWidth / 2) + 25;
+                    }
+                }
+                
+                // Always position to the LEFT (subtract from previous position)
                 positions[i] = positions[i - 1] - minDistance;
             }
             
-            // Apply positions and styling
+            // Apply positions and styling to character containers
             gameState.charactersOnScreen.forEach((char, index) => {
                 const container = char.element;
                 container.className = 'character-container';
                 
+                // Set position and base transform
+                container.style.left = `${positions[index]}px`;
+                container.style.transform = 'translateX(-50%)';
+                
                 if (index === 0) {
                     container.classList.add('active');
-                    container.style.left = `${positions[index]}px`;
-                    container.style.transform = 'translateX(-50%) scale(1.3)';
+                    container.style.transform = isMobile ? 
+                        'translateX(-50%) scale(1.1)' : 
+                        'translateX(-50%) scale(1.3)';
+                    container.style.zIndex = '100';
                     gameState.activeWordIndex = 0;
                 } else if (index <= 2) {
                     container.classList.add('next');
-                    container.style.left = `${positions[index]}px`;
-                    container.style.transform = 'translateX(-50%)';
+                    container.style.transform = isMobile ? 
+                        'translateX(-50%) scale(0.8)' : 
+                        'translateX(-50%) scale(1.0)';
+                    container.style.zIndex = '5';
                 } else {
                     container.classList.add('upcoming');
-                    container.style.left = `${positions[index]}px`;
-                    container.style.transform = 'translateX(-50%)';
+                    container.style.transform = isMobile ? 
+                        'translateX(-50%) scale(0.6)' : 
+                        'translateX(-50%) scale(0.8)';
+                    container.style.zIndex = '1';
                 }
             });
+            
+            // Position mascot container to the RIGHT of active character with proper spacing
+            const mascotContainer = document.getElementById('mascotContainer');
+            if (mascotContainer && gameState.charactersOnScreen.length > 0) {
+                // Calculate mascot position using the same distance logic as "next up" characters
+                const activeContainer = gameState.charactersOnScreen[0];
+                const activeWidth = activeContainer.width;
+                const mascotWidth = 120; // Estimated mascot container width
+                
+                let mascotDistance;
+                if (isMobile) {
+                    // Same calculation as active to first next, but to the RIGHT
+                    const activeScaledWidth = activeWidth * 1.1;
+                    const mascotScaledWidth = mascotWidth * 1.1; // Scale like active character
+                    mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) + 50;
+                } else {
+                    // Desktop calculation - same as "next up" but to the RIGHT
+                    const activeScaledWidth = activeWidth * 1.3;
+                    const mascotScaledWidth = mascotWidth * 1.3; // Scale like active character
+                    mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) + 25;
+                }
+                
+                // Position mascot to the RIGHT (ADD distance instead of subtract)
+                const activePos = screenCenter;
+                const mascotPos = activePos + mascotDistance;
+                
+                // Apply independent styling to mascot (no inherited classes)
+                mascotContainer.className = 'mascot-container';
+                mascotContainer.style.left = `${mascotPos}px`;
+                mascotContainer.style.transform = isMobile ? 
+                    'translateX(-50%) scale(1.1)' : 
+                    'translateX(-50%) scale(1.3)';
+                mascotContainer.style.zIndex = '200'; // Higher than active character
+            }
         }
 
         function getRandomCurrentWord() {
@@ -1240,10 +1607,10 @@
                 const timeDiff = currentTime - gameState.lastAnswerTime;
                 if (timeDiff < 1000 && gameState.lastAnswerTime > 0) { // Less than 1 second
                     gameState.streakCount++;
-                    updateFireIcon();
+                    updateMascotIcon();
                 } else {
                     gameState.streakCount = 1; // Reset but count this one
-                    updateFireIcon();
+                    updateMascotIcon();
                 }
                 gameState.lastAnswerTime = currentTime;
                 
@@ -1251,51 +1618,112 @@
                 gameState.alreadyPenalized = false; // Reset penalty flag for new character
             } else {
                 gameState.streakCount = 0; // Break streak on wrong answer
-                updateFireIcon();
+                updateMascotIcon();
                 handleIncorrectAnswer(activeCharacter.word, optionIndex);
                 highlightCorrectAnswer(activeCharacter.word);
             }
         }
 
-        function updateFireIcon() {
-            const fireIcon = document.getElementById('fireStreak');
-            
-            // Reset all classes
-            fireIcon.className = 'fire-streak';
-            
-            if (gameState.streakCount >= 15) {
-                fireIcon.classList.add('visible', 'streak-15');
-                positionFireIcon();
-            } else if (gameState.streakCount >= 5) {
-                fireIcon.classList.add('visible', 'streak-5');
-                positionFireIcon();
-            } else if (gameState.streakCount >= 3) {
-                fireIcon.classList.add('visible');
-                positionFireIcon();
+        // Mascot animation functions with queue system
+        function setMascotAnimation(animationType) {
+            const mascotImage = document.getElementById('mascotImage');
+            if (mascotImage && gameState.mascotAnimations[animationType]) {
+                // Force reload of GIF to start from beginning
+                const timestamp = new Date().getTime();
+                mascotImage.src = gameState.mascotAnimations[animationType] + '?t=' + timestamp;
+                gameState.currentMascotAnimation = animationType;
             }
-            // If streak < 3, fire icon remains hidden (no classes added)
         }
 
-        function positionFireIcon() {
-            const fireIcon = document.getElementById('fireStreak');
-            const activeChar = gameState.charactersOnScreen[gameState.activeWordIndex];
-            
-            if (activeChar) {
-                const activeElement = activeChar.element;
-                const rect = activeElement.getBoundingClientRect();
-                
-                // Calculate position: vertically centered with active character
-                const centerY = rect.top + rect.height / 2;
-                
-                // Horizontally: between active character right edge and screen right edge
-                const activeRight = rect.right;
-                const screenRight = window.innerWidth;
-                const centerX = activeRight + (screenRight - activeRight) / 2;
-                
-                fireIcon.style.top = `${centerY}px`;
-                fireIcon.style.left = `${centerX}px`;
-                fireIcon.style.transform = 'translate(-50%, -50%)';
+        function queueMascotAnimation(animationType) {
+            if (animationType === 'idle') {
+                // Idle can be set immediately if nothing is playing
+                if (!gameState.mascotAnimationPlaying && gameState.mascotAnimationQueue.length === 0) {
+                    setMascotAnimation('idle');
+                }
+                return;
             }
+
+            // Add to queue if it's not idle
+            gameState.mascotAnimationQueue.push(animationType);
+            processAnimationQueue();
+        }
+
+        function processAnimationQueue() {
+            // If already playing an animation, wait
+            if (gameState.mascotAnimationPlaying) {
+                return;
+            }
+
+            // If queue is empty, return to idle
+            if (gameState.mascotAnimationQueue.length === 0) {
+                gameState.mascotAnimationPlaying = false;
+                setMascotAnimation('idle');
+                return;
+            }
+
+            // Play next animation in queue
+            const nextAnimation = gameState.mascotAnimationQueue.shift();
+            gameState.mascotAnimationPlaying = true;
+            
+            setMascotAnimation(nextAnimation);
+            
+            // Wait for animation to complete, then process next
+            detectAnimationEnd(nextAnimation, () => {
+                gameState.mascotAnimationPlaying = false;
+                processAnimationQueue();
+            });
+        }
+
+        function detectAnimationEnd(animationType, callback) {
+            // Use exact durations for GIF animations
+            let estimatedDuration;
+            switch(animationType) {
+                case 'rally': 
+                    estimatedDuration = 2000; // 2 seconds
+                    break;
+                case 'sad': 
+                    estimatedDuration = 10800; // 10.8 seconds
+                    break;
+                case 'celebrate':
+                    estimatedDuration = 2000; // 2 seconds
+                    break;
+                case 'ouch':
+                    estimatedDuration = 1000; // 1 seconds
+                    break;
+                default: 
+                    estimatedDuration = 3000; // 3 seconds default
+            }
+            
+            setTimeout(callback, estimatedDuration);
+        }
+
+        function playMascotRally() {
+            queueMascotAnimation('rally');
+        }
+
+        function playMascotSad() {
+            queueMascotAnimation('sad');
+        }
+
+        function playMascotCelebrate() {
+            queueMascotAnimation('celebrate');
+        }
+
+        function playMascotOuch() {
+            queueMascotAnimation('ouch');
+        }
+
+        function updateMascotIcon() {
+            // Mascot position is fixed, no need to reposition constantly
+            // Play rally animation ONLY on new streak milestones
+            if (gameState.streakCount > 0 && (gameState.streakCount === 3 || (gameState.streakCount > 3 && gameState.streakCount % 5 === 0))) {
+                playMascotRally();
+            }
+        }
+
+        function positionMascotIcon() {
+            // No positioning needed - mascot uses CSS positioning inside charactersRow
         }
 
         function handleCorrectAnswer(word, button, optionIndex) {
@@ -1320,6 +1748,7 @@
                 createStarAnimation(button);
                 playStarShootAnimation();
                 playSound('starShoot');
+                playMascotCelebrate(); // Play celebrate animation when earning a star
                 
                 // IMMEDIATELY reset button to bronze and replace word
                 addNewWordToRotation(word, optionIndex);
@@ -1380,14 +1809,33 @@
                     correctButton.classList.add('incorrect-animation');
                     
                     const progress = gameState.wordProgress[correctWord.chinese];
+                    const oldTier = progress.tier; // Store old tier
+                    
                     // Demote tier
-                    if (progress.tier === 'gold') progress.tier = 'silver';
-                    else if (progress.tier === 'silver') progress.tier = 'bronze';
+                    if (progress.tier === 'gold') {
+                        progress.tier = 'silver';
+                    } else if (progress.tier === 'silver') {
+                        progress.tier = 'bronze';
+                    }
                     // Bronze stays bronze (can't go lower)
+                    
+                    // Play appropriate animation based on tier change
+                    if (oldTier !== progress.tier) {
+                        // Tier was demoted - play sad animation
+                        console.log(`Tier demoted from ${oldTier} to ${progress.tier} - playing sad animation`);
+                        playMascotSad();
+                    } else if (progress.tier === 'bronze') {
+                        // Wrong answer on bronze (no tier loss) - play ouch animation
+                        console.log('Wrong answer on bronze tier - playing ouch animation');
+                        playMascotOuch();
+                    }
                     
                     updateOptionButton(correctOptionIndex, correctWord, progress);
                     setTimeout(() => correctButton.classList.remove('incorrect-animation'), 800);
                 }
+            } else {
+                // Easy mode - just play ouch for any wrong answer (no tier loss)
+                playMascotOuch();
             }
             
             playSound('incorrect');
@@ -1589,6 +2037,11 @@
             // Reposition all characters with proper spacing
             positionCharacterContainers();
             
+            // Ensure mascot is in idle state (no positioning needed)
+            setTimeout(() => {
+                ensureMascotIdle();
+            }, 100);
+            
             // Play pronunciation for new active character
             if (gameState.charactersOnScreen.length > 0) {
                 setTimeout(() => playPronunciation(getChineseChar(gameState.charactersOnScreen[0].word)), 300);
@@ -1676,27 +2129,48 @@
         function toggleEasyMode() {
             gameState.easyMode = !gameState.easyMode;
             const toggle = document.getElementById('easyModeToggle');
+            const toggleMobile = document.getElementById('easyModeToggleMobile');
             
             if (gameState.easyMode) {
                 toggle.classList.add('active');
+                toggleMobile.classList.add('active');
             } else {
                 toggle.classList.remove('active');
+                toggleMobile.classList.remove('active');
             }
         }
 
         function toggleTraditional() {
             useTraditional = !useTraditional;
             const toggle = document.getElementById('traditionalToggle');
+            const toggleMobile = document.getElementById('traditionalToggleMobile');
             
             if (useTraditional) {
                 toggle.classList.add('active');
+                toggleMobile.classList.add('active');
             } else {
                 toggle.classList.remove('active');
+                toggleMobile.classList.remove('active');
             }
             
             // Update all visible characters in real-time
             updateCharacterDisplay();
         }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobileMenu');
+            mobileMenu.classList.toggle('active');
+        }
+
+        // Close mobile menu when clicking outside
+        document.addEventListener('click', function(event) {
+            const mobileMenu = document.getElementById('mobileMenu');
+            const toggleButton = document.querySelector('.mobile-menu-toggle');
+            
+            if (mobileMenu && !mobileMenu.contains(event.target) && !toggleButton.contains(event.target)) {
+                mobileMenu.classList.remove('active');
+            }
+        });
 
         function updateCharacterDisplay() {
             // Update characters row
@@ -1788,5 +2262,38 @@
         // Load default wordlist when page loads
         window.addEventListener('DOMContentLoaded', initializeApp);
     </script>
+     <!-- Footer with matcha green background -->
+    <footer class="bg-[#80B280] text-white py-4 border-t border-gray-700 mt-auto">
+        <div class="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
+            <!-- Left aligned content (Patreon and GitHub) -->
+            <div class="flex flex-col sm:items-start items-center mb-2 sm:mb-0">
+                <p class="text-sm mb-1 rounded-md flex items-center">
+                    <i class="fab fa-patreon text-lg mr-2"></i> <!-- Patreon Icon -->
+                    Patreon:
+                    <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        @UnfinishedProjects
+                    </a>
+                </p>
+                <p class="text-sm rounded-md flex items-center">
+                    <i class="fab fa-github text-lg mr-2"></i> <!-- GitHub Icon -->
+                    GitHub Repository:
+                    <a href="https://github.com/GreenAnts/HSK-3.0-Study-Game" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        HSK-3.0-Study-Game
+                    </a>
+                </p>
+            </div>
+
+            <!-- Right aligned content (Mascot Attribution) -->
+            <div class="flex flex-col sm:items-end items-center">
+                <p class="text-sm rounded-md flex items-center">
+                    <i class="fas fa-palette text-lg mr-2"></i> <!-- Palette Icon for Itch.io (Art Attribution) -->
+                    Mascot Attribution:
+                    <a href="https://atari-boy.itch.io/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        Atari Boy
+                    </a>
+                </p>
+            </div>
+        </div>
+    </footer>
 </body>
 </html>
