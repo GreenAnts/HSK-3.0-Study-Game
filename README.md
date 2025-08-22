@@ -3,7 +3,7 @@
 
 ❗📚 Play the game online here: **https://greenants.github.io/HSK-3.0-Study-Game/** 👈
 
-> [!NOTE  
+> [!NOTE]  
 > Although it should be working after the last update - Github pages can block the google tts (chinese pronunciation audio) on the deployed page. if the issue persists - download and run the files locally
 
 - - - -
