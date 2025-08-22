@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
     <title>HSK 3.0 Chinese Vocabulary Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
@@ -1378,6 +1379,121 @@
             return useTraditional && word.traditional ? word.traditional : word.chinese;
         }
 
+        // WORKING Google TTS implementation based on research
+        function playPronunciation(text) {
+            if (!text) return;
+            
+            try {
+                // Method from working examples - simple audio element approach
+                const audio = new Audio();
+                
+                // Use the proven working URL format from research
+                // Format: https://translate.google.com/translate_tts?tl=LANG&q=TEXT&client=tw-ob
+                const ttsUrl = `https://translate.google.com/translate_tts?tl=zh-CN&q=${encodeURIComponent(text)}&client=tw-ob`;
+                
+                console.log('Playing TTS for:', text);
+                console.log('TTS URL:', ttsUrl);
+                
+                audio.src = ttsUrl;
+                
+                // Handle errors
+                audio.onerror = function(e) {
+                    console.log('Primary audio method failed, trying alternative...');
+                    playTTSAlternative(text);
+                };
+                
+                // Handle successful loading
+                audio.oncanplaythrough = function() {
+                    console.log('Audio loaded successfully, playing...');
+                };
+                
+                // Play the audio
+                audio.play().catch(err => {
+                    console.log('Audio play failed:', err);
+                    playTTSAlternative(text);
+                });
+                
+            } catch (error) {
+                console.log('TTS creation failed:', error);
+                playTTSAlternative(text);
+            }
+        }
+
+        // Alternative method using embedded audio element
+        function playTTSAlternative(text) {
+            try {
+                console.log('Trying alternative TTS method...');
+                
+                // Create or reuse hidden audio element
+                let audioElement = document.getElementById('tts-audio-element');
+                if (!audioElement) {
+                    audioElement = document.createElement('audio');
+                    audioElement.id = 'tts-audio-element';
+                    audioElement.style.display = 'none';
+                    audioElement.preload = 'none';
+                    document.body.appendChild(audioElement);
+                }
+                
+                // Use alternative URL format with more parameters
+                const ttsUrl = `https://translate.google.com/translate_tts?ie=UTF-8&total=1&idx=0&textlen=${text.length}&client=tw-ob&q=${encodeURIComponent(text)}&tl=zh-CN`;
+                
+                console.log('Alternative TTS URL:', ttsUrl);
+                
+                audioElement.src = ttsUrl;
+                audioElement.load();
+                
+                audioElement.oncanplaythrough = function() {
+                    console.log('Alternative audio loaded, playing...');
+                    audioElement.play().catch(err => {
+                        console.log('Alternative audio play failed:', err);
+                        playTTSFinalFallback(text);
+                    });
+                };
+                
+                audioElement.onerror = function(e) {
+                    console.log('Alternative audio failed:', e);
+                    playTTSFinalFallback(text);
+                };
+                
+            } catch (error) {
+                console.log('Alternative TTS failed:', error);
+                playTTSFinalFallback(text);
+            }
+        }
+
+        // Final fallback: create audio element in a more direct way
+        function playTTSFinalFallback(text) {
+            try {
+                console.log('Trying final TTS fallback...');
+                
+                // Most basic approach - just create audio and play
+                const ttsUrl = `https://translate.google.com/translate_tts?tl=zh-CN&q=${encodeURIComponent(text)}&client=tw-ob`;
+                
+                // Create new audio element each time
+                const audio = new Audio(ttsUrl);
+                
+                audio.addEventListener('loadeddata', function() {
+                    console.log('Final fallback audio loaded');
+                    audio.play().catch(err => {
+                        console.log('Final fallback play failed:', err);
+                        console.log('All TTS methods exhausted. You can test the URL directly:');
+                        console.log(ttsUrl);
+                    });
+                });
+                
+                audio.addEventListener('error', function(e) {
+                    console.log('Final fallback failed:', e);
+                    console.log('Test this URL directly in browser:', ttsUrl);
+                });
+                
+                // Try to load
+                audio.load();
+                
+            } catch (error) {
+                console.log('Final TTS fallback failed:', error);
+            }
+        }
+
         // Game State with mascot animations and queue
         let gameState = {
             selectedWords: [],
@@ -1408,79 +1524,58 @@
             sadAnimationActive: false // Track if sad animation is currently playing
         };
 
-        // Audio using multiple methods for better compatibility
-        function playPronunciation(text) {
-            // Method 1: Try creating audio element with Google TTS
-            try {
-                const audio = new Audio();
-                const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodeURIComponent(text)}&tl=zh&client=tw-ob&ttsspeed=0.8`;
-                audio.src = url;
-                audio.play().catch(() => {
-                    // Method 2: Try Speech Synthesis as fallback
-                    fallbackTTS(text);
-                });
-            } catch (error) {
-                // Method 3: Direct fallback if audio creation fails
-                fallbackTTS(text);
-            }
-        }
-
-        function fallbackTTS(text) {
-            try {
-                
-            } catch (error) {
-                console.log('Speech synthesis failed for:', text);
-            }
-        }
-
         // Sound Effects
         function playSound(type) {
-            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-            let frequencies, duration;
-            
-            switch(type) {
-                case 'correct':
-                    frequencies = [523, 659, 784]; // C, E, G chord
-                    duration = 0.3;
-                    break;
-                case 'incorrect':
-                    frequencies = [196, 220]; // Dissonant low notes
-                    duration = 0.5;
-                    break;
-                case 'complete':
-                    frequencies = [523, 659, 784, 1047]; // C major with high C
-                    duration = 0.8;
-                    break;
-                case 'tierUp':
-                    frequencies = [440, 554, 659]; // A, C#, E - triumph chord
-                    duration = 0.6;
-                    break;
-                case 'starShoot':
-                    frequencies = [523, 659, 784, 1047, 1319]; // Rising star sound
-                    duration = 1.0;
-                    break;
-                default:
-                    frequencies = [440];
-                    duration = 0.3;
+            try {
+                const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+                let frequencies, duration;
+                
+                switch(type) {
+                    case 'correct':
+                        frequencies = [523, 659, 784]; // C, E, G chord
+                        duration = 0.3;
+                        break;
+                    case 'incorrect':
+                        frequencies = [196, 220]; // Dissonant low notes
+                        duration = 0.5;
+                        break;
+                    case 'complete':
+                        frequencies = [523, 659, 784, 1047]; // C major with high C
+                        duration = 0.8;
+                        break;
+                    case 'tierUp':
+                        frequencies = [440, 554, 659]; // A, C#, E - triumph chord
+                        duration = 0.6;
+                        break;
+                    case 'starShoot':
+                        frequencies = [523, 659, 784, 1047, 1319]; // Rising star sound
+                        duration = 1.0;
+                        break;
+                    default:
+                        frequencies = [440];
+                        duration = 0.3;
+                }
+                
+                frequencies.forEach((frequency, index) => {
+                    const oscillator = audioContext.createOscillator();
+                    const gainNode = audioContext.createGain();
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioContext.destination);
+                    
+                    oscillator.frequency.value = frequency;
+                    oscillator.type = type === 'incorrect' ? 'sawtooth' : 'sine';
+                    
+                    const startTime = audioContext.currentTime + (index * 0.1);
+                    gainNode.gain.setValueAtTime(0.2, startTime);
+                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
+                    
+                    oscillator.start(startTime);
+                    oscillator.stop(startTime + duration);
+                });
+            } catch (error) {
+                console.log('Sound synthesis failed:', error);
             }
-            
-            frequencies.forEach((frequency, index) => {
-                const oscillator = audioContext.createOscillator();
-                const gainNode = audioContext.createGain();
-                
-                oscillator.connect(gainNode);
-                gainNode.connect(audioContext.destination);
-                
-                oscillator.frequency.value = frequency;
-                oscillator.type = type === 'incorrect' ? 'sawtooth' : 'sine';
-                
-                const startTime = audioContext.currentTime + (index * 0.1);
-                gainNode.gain.setValueAtTime(0.2, startTime);
-                gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-                
-                oscillator.start(startTime);
-                oscillator.stop(startTime + duration);
-            });
         }
 
         // Landing Page Logic
@@ -2546,6 +2641,9 @@
             // Load Band 1 by default
             await loadHSKWords(1);
             updateRange();
+            
+            // No need to load voices since we're using Google TTS
+            console.log('App initialized with Google TTS audio support');
         }
 
         // Initialize range values on page load
