@@ -1853,39 +1853,48 @@
 
         // Enhanced Sound Effects System
         function playSound(type) {
-            if (!gameSettings.sfx.enabled && type !== 'click') return; // Allow click sprite even if SFX off
+            if (!gameSettings.sfx.enabled) return;
             
             try {
                 const audioContext = new (window.AudioContext || window.webkitAudioContext)();
                 let frequencies, duration;
                 
                 switch(type) {
-                    case 'click':
-                        // Softer "whoosh" sound
-                        frequencies = [100, 300, 500]; // Descending wind-like sound
-                        duration = 0.2;
+                    case 'correct':
+                        frequencies = [523, 659, 784]; // C, E, G chord
+                        duration = 0.3;
                         break;
-                    // ... keep other cases the same
+                    case 'incorrect':
+                        frequencies = [196, 220]; // Dissonant low notes
+                        duration = 0.5;
+                        break;
+                    case 'complete':
+                        frequencies = [523, 659, 784, 1047]; // C major with high C
+                        duration = 0.8;
+                        break;
+                    case 'tierUp':
+                        frequencies = [440, 554, 659]; // A, C#, E - triumph chord
+                        duration = 0.6;
+                        break;
+                    case 'starShoot':
+                        frequencies = [523, 659, 784, 1047, 1319]; // Rising star sound
+                        duration = 1.0;
+                        break;
+                    default:
+                        frequencies = [440];
+                        duration = 0.3;
+                }
+                
+                // ADD THIS SAFETY CHECK:
+                if (!frequencies || !Array.isArray(frequencies)) {
+                    console.log('Invalid frequencies for sound type:', type);
+                    return;
                 }
                 
                 frequencies.forEach((frequency, index) => {
-                    const oscillator = audioContext.createOscillator();
-                    const gainNode = audioContext.createGain();
-                    
-                    oscillator.connect(gainNode);
-                    gainNode.connect(audioContext.destination);
-                    
-                    oscillator.frequency.value = frequency;
-                    oscillator.type = type === 'click' ? 'triangle' : (type === 'incorrect' ? 'sawtooth' : 'sine');
-                    
-                    const startTime = audioContext.currentTime + (index * 0.02);
-                    const volume = gameSettings.sfx.enabled ? gameSettings.sfx.volume * (type === 'click' ? 0.15 : 0.4) : 0;
-                    gainNode.gain.setValueAtTime(volume, startTime);
-                    gainNode.gain.exponentialRampToValueAtTime(0.01, startTime + duration);
-                    
-                    oscillator.start(startTime);
-                    oscillator.stop(startTime + duration);
+                    // ... rest of function stays the same
                 });
+                
             } catch (error) {
                 console.log('Sound synthesis failed:', error);
             }
@@ -1997,8 +2006,14 @@
                 return;
             }
 
-            // OUCH animations play immediately and don't queue (spam-resistant)
+            // OUCH animations - BLOCK if sad is active
             if (animationType === 'ouch') {
+                // Block ouch if sad animation is active
+                if (gameState.sadAnimationActive) {
+                    console.log('Blocking ouch animation because sad animation is active');
+                    return;
+                }
+                
                 // Only play if not already playing ouch or if enough time has passed
                 if (gameState.currentMascotAnimation !== 'ouch' || 
                     Date.now() - gameState.lastOuchTime > 1000) { // 1 second cooldown
@@ -2012,6 +2027,15 @@
                             gameSettings.mascot.lastInteraction = Date.now();
                         }
                     }, gameState.mascotAnimationDurations.ouch);
+                }
+                return;
+            }
+
+            // SAD animations should be queued and block other animations
+            if (animationType === 'sad') {
+                if (!gameState.sadAnimationActive) { // Only queue if not already sad
+                    gameState.mascotAnimationQueue.push(animationType);
+                    processAnimationQueue();
                 }
                 return;
             }
@@ -2034,9 +2058,8 @@
                 gameState.mascotAnimationQueue.push(animationType);
                 processAnimationQueue();
             }
-            // If something is playing, these get dropped (no spam)
         }
-
+        
         function processAnimationQueue() {
             // If already playing an animation, wait
             if (gameState.mascotAnimationPlaying || gameState.mascotAnimationQueue.length === 0) {
@@ -2054,13 +2077,14 @@
             setTimeout(() => {
                 gameState.mascotAnimationPlaying = false;
                 
-                // Clear sad animation flag when sad animation completes
+                // IMPORTANT: Clear sad animation flag when sad animation completes
                 if (nextAnimation === 'sad') {
                     gameState.sadAnimationActive = false;
+                    console.log('Sad animation completed, clearing sadAnimationActive flag');
                 }
                 
                 // After action animations, return to walk and update interaction time
-                if (['rally', 'celebrate', 'ouch'].includes(nextAnimation)) {
+                if (['rally', 'celebrate', 'ouch', 'sad'].includes(nextAnimation)) { // Added 'sad' here
                     setMascotAnimation('walk');
                     gameSettings.mascot.lastInteraction = Date.now();
                 }
@@ -2069,7 +2093,7 @@
                 processAnimationQueue();
             }, duration);
         }
-        // Enhanced Settings System with Pinyin Controls
+        
         function togglePinyin() {
             gameSettings.ui.showPinyin = !gameSettings.ui.showPinyin;
             const toggle = document.getElementById('pinyinToggle');
@@ -2178,11 +2202,12 @@
                 traditionalToggle?.classList.remove('active');
             }
         }
+        
         // Fixed Game Logic - Addresses Shake Animation Bug
         function highlightCorrectAnswer(correctWord) {
-            // Prevent multiple shake animations from triggering
+            // Remove all the console.log statements
+            
             if (gameState.shakeInProgress) {
-                console.log('Shake already in progress, skipping...');
                 return;
             }
 
@@ -2204,16 +2229,12 @@
                     button.style.border = '3px solid var(--sunglow)';
                     button.style.boxShadow = '0 0 15px rgba(255, 203, 105, 0.6)';
                     
-                    // Remove shake after animation completes - BUT DON'T ADVANCE CHARACTER
                     setTimeout(() => {
                         button.classList.remove('shake-animation');
                         button.style.border = '';
                         button.style.boxShadow = '';
                         gameState.shakeInProgress = false;
-                        
-                        // REMOVED: Don't process character advance on wrong answers
-                        // The character should only advance on CORRECT answers
-                        gameState.pendingCharacterAdvance = false; // Clear any pending advance
+                        gameState.pendingCharacterAdvance = false;
                     }, 800);
                 }
             });
@@ -2400,11 +2421,12 @@
             
             playSound('incorrect');
         }
+        
         // Game Initialization System
         function initializeGame() {
             console.log('=== INITIALIZING FRESH GAME ===');
             
-            // FORCE reset all problematic state flags
+            // FORCE complete reset of all problematic state
             gameState.activeWordIndex = 0;
             gameState.charactersOnScreen = [];
             gameState.optionButtons = [];
@@ -2418,12 +2440,27 @@
             gameState.sadAnimationActive = false;
             gameState.mascotAnimationQueue = [];
             
-            // Re-setup keyboard listeners (since we removed them in cleanup)
+            console.log('State after reset:', {
+                activeWordIndex: gameState.activeWordIndex,
+                charactersOnScreen: gameState.charactersOnScreen.length,
+                currentWords: gameState.currentWords.length
+            });
+            
+            // Re-setup keyboard listeners
             setupKeyboardListeners();
             
-            // Initialize components in proper order
+            // Initialize components in strict order
             setupCharactersRow();
             setupOptionsGrid();
+            
+            // VERIFY synchronization after setup
+            console.log('State after setup:', {
+                activeWordIndex: gameState.activeWordIndex,
+                charactersOnScreen: gameState.charactersOnScreen.length,
+                optionButtons: gameState.optionButtons.length,
+                activeWord: gameState.charactersOnScreen[0]?.word.chinese,
+                firstOption: gameState.currentOptions[0]?.chinese
+            });
             
             // Set mascot to walk and update interaction time
             setMascotAnimation('walk');
@@ -3169,9 +3206,8 @@
                         button.style.transform = '';
                         button.style.opacity = '';
                         button.style.animation = '';
-                        // Remove event listeners by cloning
-                        const newButton = button.cloneNode(true);
-                        button.parentNode.replaceChild(newButton, button);
+                        // IMPORTANT: Remove onclick handlers to prevent ghost references
+                        button.onclick = null;
                     });
                     optionsGrid.innerHTML = '';
                 }
@@ -3189,7 +3225,7 @@
                     });
                 }
                 
-                // Reset mascot to walk animation
+                // Set mascot to walk animation
                 setMascotAnimation('walk');
                 gameSettings.mascot.lastInteraction = Date.now();
             } catch (error) {
@@ -3204,18 +3240,32 @@
                 mascotAnimationDurations: { ...gameState.mascotAnimationDurations }
             };
             
-            // Create completely fresh game state
+            // Create completely fresh game state with EXPLICIT resets
             gameState = {
-                selectedWords: [], currentWords: [], activeWordIndex: 0, wordProgress: {},
-                starsEarned: 0, completedWords: 0, charactersOnScreen: [], optionButtons: [],
-                currentOptions: [], streakCount: 0, lastAnswerTime: 0, alreadyPenalized: false,
-                tierRequirement: 5, shakeInProgress: false, pendingCharacterAdvance: false,
-                hotkeys: preservedSettings.hotkeys, easyMode: preservedSettings.easyMode,
+                selectedWords: [], 
+                currentWords: [], 
+                activeWordIndex: 0,  // EXPLICITLY reset to 0
+                wordProgress: {},
+                starsEarned: 0, 
+                completedWords: 0, 
+                charactersOnScreen: [],  // EXPLICITLY empty array
+                optionButtons: [],       // EXPLICITLY empty array
+                currentOptions: [],      // EXPLICITLY empty array
+                streakCount: 0, 
+                lastAnswerTime: 0, 
+                alreadyPenalized: false,
+                tierRequirement: 5, 
+                shakeInProgress: false,  // EXPLICITLY reset
+                pendingCharacterAdvance: false,
+                lastOuchTime: 0,
+                hotkeys: preservedSettings.hotkeys, 
+                easyMode: preservedSettings.easyMode,
                 mascotAnimations: preservedSettings.mascotAnimations,
                 mascotAnimationDurations: preservedSettings.mascotAnimationDurations,
-                mascotAnimationQueue: [], currentMascotAnimation: 'walk',
-                mascotAnimationPlaying: false, sadAnimationActive: false,
-                lastOuchTime: 0
+                mascotAnimationQueue: [], 
+                currentMascotAnimation: 'walk',
+                mascotAnimationPlaying: false, 
+                sadAnimationActive: false
             };
             
             // Clear ALL timeouts/intervals more aggressively
