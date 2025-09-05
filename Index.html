@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="referrer" content="no-referrer">
+    <title>HSK 3.0 Chinese Vocabulary Game</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Styles -->
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Landing Page -->
+    <div class="landing-page" id="landingPage">
+        <!-- Floating Settings Button -->
+        <div class="landing-header">
+            <button class="vintage-settings-btn" onclick="openSettings()">
+                <i class="fas fa-cog"></i>
+            </button>
+        </div>
+        
+        <h1>HSK 3.0 Chinese Vocabulary</h1>
+        <div class="selection-container">
+            <!-- Band Selection Section -->
+            <div class="config-section band-section">
+                <h3>📚 Select HSK Band</h3>
+                <div class="slider-container">
+                    <select class="tier-dropdown" id="bandSelector" onchange="changeBand()">
+                        <option value="1" selected>Band 1</option>
+                        <option value="2">Band 2</option>
+                        <option value="3">Band 3</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Word Range Section -->
+            <div class="config-section range-section">
+                <h3>🎯 Select Word Range</h3>
+                <div class="slider-container">
+                    <div class="range-input-container">
+                        <div class="range-input-group">
+                            <label>From:</label>
+                            <input type="number" id="startInput" class="range-input" min="1" max="50" value="1" onchange="updateRange()" oninput="updateRange()">
+                        </div>
+                        <span class="range-separator">—</span>
+                        <div class="range-input-group">
+                            <label>To:</label>
+                            <input type="number" id="endInput" class="range-input" min="1" max="50" value="50" onchange="updateRange()" oninput="updateRange()">
+                        </div>
+                        <div class="range-input-group">
+                            <label>Quick:</label>
+                            <button class="all-words-btn" onclick="selectAllWords()">All</button>
+                        </div>
+                    </div>
+                    <div class="range-values">
+                        Words: <span id="startValue">1</span> - <span id="endValue">50</span>
+                        (<span id="totalWords">50</span> total)
+                    </div>
+                    <div class="range-progress-bar">
+                        <div class="range-progress-fill" id="rangeProgressFill"></div>
+                        <div class="range-progress-text" id="rangeProgressText">50 / 500 words</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Game Options Section -->
+            <div class="config-section options-section">
+                <h3>⚙️ Game Options</h3>
+                <div class="game-options-grid">
+                    <div class="option-item">
+                        <div class="checkbox-container">
+                            <div class="custom-checkbox" id="randomizeCheckbox" onclick="toggleRandomize()"></div>
+                            <label for="randomizeCheckbox" onclick="toggleRandomize()">Randomize word order</label>
+                        </div>
+                    </div>
+                    
+                    <div class="option-divider"></div>
+                    
+                    <div class="option-item">
+                        <div class="tier-select">
+                            <label>Correct answers per tier:</label>
+                            <select class="tier-dropdown" id="landingTierRequirement">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3" selected>3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                                <option value="6">6</option>
+                                <option value="7">7</option>
+                                <option value="8">8</option>
+                                <option value="9">9</option>
+                                <option value="10">10</option>
+                                <option value="11">11</option>
+                                <option value="12">12</option>
+                                <option value="13">13</option>
+                                <option value="14">14</option>
+                                <option value="15">15</option>
+                                <option value="16">16</option>
+                                <option value="17">17</option>
+                                <option value="18">18</option>
+                                <option value="19">19</option>
+                                <option value="20">20</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Start Game Section -->
+            <div class="config-section controls-section">
+                <h3>🚀 Start Game</h3>
+                <div class="landing-buttons-container">
+                    <button class="start-button" onclick="startGame()">Start Game</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Game Page -->
+    <div class="game-page" id="gamePage">
+        <div class="score-bar">
+            <!-- Desktop menu controls - hidden on mobile -->
+            <div class="menu-controls">
+                <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
+                <button class="menu-btn" onclick="openSettings()">⚙️ Settings</button>
+            </div>
+
+            <!-- Mobile menu toggle -->
+            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+
+            <!-- Stars counter (truly centered now) -->
+            <div class="stars-counter">
+                <span class="star-icon" id="starIcon">⭐</span>
+                <span id="starsCount">0</span> / <span id="totalStarsCount">0</span>
+            </div>
+
+            <!-- Mobile collapsible menu -->
+            <div class="mobile-menu" id="mobileMenu">
+                <div class="mobile-menu-content">
+                    <div class="mobile-menu-row">
+                        <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
+                        <button class="menu-btn" onclick="openSettings()">⚙️ Settings</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="characters-row" id="charactersRow">
+            <!-- Mascot container - independent styling -->
+            <div class="mascot-container" id="mascotContainer">
+                <img id="mascotImage" src="Mascot/walk.gif" alt="Mascot" />
+            </div>
+        </div>
+        
+        <div class="options-container">
+            <div class="options-grid" id="optionsGrid"></div>
+        </div>
+    </div>
+    <!-- Enhanced Settings Modal -->
+    <div id="settingsModal" class="modal">
+        <div class="modal-content">
+            <h2>⚙️ Game Settings</h2>
+            <div class="settings-grid">
+                
+                <!-- Audio & Display Settings Combined -->
+                <div class="settings-section">
+                    <h3>🔊 Audio & Display</h3>
+                      <!-- Music Row -->
+                      <div class="settings-row">
+                          <div class="toggle-container">
+                              <span class="toggle-label">Music</span>
+                              <div class="toggle-switch" id="musicToggle" onclick="toggleMusic()">
+                                  <div class="toggle-slider"></div>
+                              </div>
+                          </div>
+                          <div class="volume-container">
+                              <input type="range" id="musicVolume" class="volume-slider" min="0" max="100" value="5" onchange="adjustMusicVolume()">
+                              <span class="volume-label" id="musicVolumeText">5%</span>
+                          </div>
+                      </div>
+                      
+                      <!-- SFX Row -->
+                      <div class="settings-row">
+                          <div class="toggle-container">
+                              <span class="toggle-label">SFX</span>
+                              <div class="toggle-switch active" id="sfxToggle" onclick="toggleSFX()">
+                                  <div class="toggle-slider"></div>
+                              </div>
+                          </div>
+                          <div class="volume-container">
+                              <input type="range" id="sfxVolume" class="volume-slider" min="0" max="100" value="70" onchange="adjustSFXVolume()">
+                              <span class="volume-label" id="sfxVolumeText">70%</span>
+                          </div>
+                      </div>
+                      
+                      <!-- TTS Row -->
+                      <div class="settings-row">
+                          <div class="toggle-container">
+                              <span class="toggle-label">Chinese TTS</span>
+                              <div class="toggle-switch active" id="ttsToggle" onclick="toggleTTS()">
+                                  <div class="toggle-slider"></div>
+                              </div>
+                          </div>
+                          <div class="volume-container">
+                              <input type="range" id="ttsVolume" class="volume-slider" min="0" max="100" value="80" onchange="adjustTTSVolume()">
+                              <span class="volume-label" id="ttsVolumeText">80%</span>
+                          </div>
+                      </div>
+                      
+                      <div class="settings-divider"></div>
+                    
+                    <!-- Display Row -->
+                    <div class="settings-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Easy Mode</span>
+                            <div class="toggle-switch" id="easyModeToggleSettings" onclick="toggleEasyMode()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Traditional</span>
+                            <div class="toggle-switch" id="traditionalToggleSettings" onclick="toggleTraditional()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="settings-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Show Pinyin</span>
+                            <div class="toggle-switch active" id="pinyinToggle" onclick="togglePinyin()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-container" id="pinyinModeContainer">
+                            <span class="toggle-label">Pinyin Mode</span>
+                            <div class="toggle-switch" id="pinyinModeToggle" onclick="togglePinyinMode()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Hotkeys Section with Numpad Layout -->
+                <div class="settings-section">
+                    <h3>⌨️ Hotkeys (Numpad Layout)</h3>
+                    <div class="hotkeys-numpad" id="hotkeySettings"></div>
+                </div>
+
+            </div>
+            <button class="close-btn" onclick="closeSettings()">Save & Close</button>
+        </div>
+    </div>
+    
+    <!-- Footer with vintage green background -->
+    <footer class="bg-[#797d62] text-white py-4 border-t border-gray-700 mt-auto">
+        <div class="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
+            <!-- Left aligned content (Patreon and GitHub) -->
+            <div class="flex flex-col sm:items-start items-center mb-2 sm:mb-0">
+                <p class="text-sm mb-1 rounded-md flex items-center">
+                    <i class="fab fa-patreon text-lg mr-2"></i> <!-- Patreon Icon -->
+                    Patreon:
+                    <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        @UnfinishedProjects
+                    </a>
+                </p>
+                <p class="text-sm rounded-md flex items-center">
+                    <i class="fab fa-github text-lg mr-2"></i> <!-- GitHub Icon -->
+                    GitHub Repository:
+                    <a href="https://github.com/GreenAnts/HSK-3.0-Study-Game" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        HSK-3.0-Study-Game
+                    </a>
+                </p>
+            </div>
+
+            <!-- Right aligned content (Mascot Attribution) -->
+            <div class="flex flex-col sm:items-end items-center">
+                <p class="text-sm rounded-md flex items-center">
+                    <i class="fas fa-palette text-lg mr-2"></i> <!-- Palette Icon for Itch.io (Art Attribution) -->
+                    Attributions:
+                    <a href="https://atari-boy.itch.io/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        Atari Boy (Mascot Animation)
+                    </a>|
+                    <a href="https://www.chosic.com/download-audio/53268/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        Mountain Legend (Music)
+                    </a>|
+                    <a href="https://pixabay.com/sound-effects/simple-whoosh-382724/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        DRAGON-STUDIO (Click Sound Effect)
+                    </a>|
+                    <a href="https://bdragon1727.itch.io/free-smoke-fx-pixel-2" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
+                        BDragon1727 (Click Animation)
+                    </a>
+                </p>
+            </div>
+        </div>
+    </footer>
+    <!-- Background Music Audio Element -->
+    <audio id="backgroundMusic" loop preload="auto">
+        <source src="Music/background.ogg" type="audio/ogg">
+        <source src="Music/background.mp3" type="audio/mp3">
+    </audio>
+    <!-- Load HSK Word Data Files -->
+    <script src="wordlists/band-1-words.js"></script>
+    <script src="wordlists/band-2-words.js"></script>
+    <script src="wordlists/band-3-words.js"></script>
+    <!-- Scripts -->
+    <script src="scripts.js"></script>
+</body>
+</html>
