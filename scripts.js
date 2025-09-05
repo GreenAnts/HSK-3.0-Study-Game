@@ -28,6 +28,9 @@ let ttsState = {
     lastPlayTime: 0
 };
 
+// Saved game state for resume functionality
+let savedGameState = null;
+
 // Enhanced Game State with New Animation Durations
 let gameState = {
     selectedWords: [], currentWords: [], activeWordIndex: 0, wordProgress: {},
@@ -284,9 +287,29 @@ function adjustTTSVolume() {
 // Background Music Management
 function initializeBackgroundMusic() {
     const bgMusic = document.getElementById('backgroundMusic');
+    const toggle = document.getElementById('musicToggle');
+    
     if (bgMusic) {
         bgMusic.volume = gameSettings.music.volume;
         bgMusic.muted = !gameSettings.music.enabled;
+        
+        // Set up proper event listeners for music
+        bgMusic.addEventListener('canplay', () => {
+            console.log('Background music is ready to play');
+        });
+        
+        bgMusic.addEventListener('error', (e) => {
+            console.log('Background music error:', e);
+        });
+        
+        // Initialize toggle state
+        if (toggle) {
+            if (gameSettings.music.enabled) {
+                toggle.classList.add('active');
+            } else {
+                toggle.classList.remove('active');
+            }
+        }
     }
 }
 
@@ -299,13 +322,27 @@ function toggleMusic() {
         toggle.classList.add('active');
         if (bgMusic) {
             bgMusic.muted = false;
-            bgMusic.play().catch(e => console.log('Music play failed:', e));
+            bgMusic.volume = gameSettings.music.volume;
+            
+            // Try to play music with better error handling
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Background music started successfully');
+                }).catch(error => {
+                    console.log('Music play failed (likely due to browser autoplay policy):', error);
+                    // Show user feedback that they need to interact first
+                    if (error.name === 'NotAllowedError') {
+                        console.log('User interaction required for music playback');
+                    }
+                });
+            }
         }
     } else {
         toggle.classList.remove('active');
         if (bgMusic) {
-            bgMusic.muted = true;
             bgMusic.pause();
+            bgMusic.muted = true;
         }
     }
 }
@@ -438,6 +475,23 @@ function selectAllWords() {
 
 // Add click effect listener to entire document
 document.addEventListener('click', createClickEffect);
+
+// Add music enablement on first user interaction (for autoplay policy)
+let musicInteractionHandled = false;
+document.addEventListener('click', function enableMusicOnFirstClick() {
+    if (!musicInteractionHandled && gameSettings.music.enabled) {
+        const bgMusic = document.getElementById('backgroundMusic');
+        if (bgMusic && bgMusic.paused) {
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Background music enabled after user interaction');
+                    musicInteractionHandled = true;
+                }).catch(e => console.log('Music still failed after user interaction:', e));
+            }
+        }
+    }
+}, { once: false }); // Don't use once, as we might need multiple attempts
 // Enhanced Mascot Animation System with Idle Detection
 function setupIdleDetection() {
     // Track user interactions for idle detection
@@ -962,11 +1016,21 @@ function initializeGame() {
     setMascotAnimation('walk');
     gameSettings.mascot.lastInteraction = Date.now();
     
-    // Start background music if enabled
+    // Start background music if enabled (user interaction guaranteed here)
     if (gameSettings.music.enabled) {
         const bgMusic = document.getElementById('backgroundMusic');
         if (bgMusic) {
-            bgMusic.play().catch(e => console.log('Background music failed to start:', e));
+            bgMusic.muted = false;
+            bgMusic.volume = gameSettings.music.volume;
+            const playPromise = bgMusic.play();
+            if (playPromise !== undefined) {
+                playPromise.then(() => {
+                    console.log('Background music started successfully in game');
+                }).catch(e => {
+                    console.log('Background music failed to start:', e);
+                    // If it fails here, the file might not exist or be corrupted
+                });
+            }
         }
     }
     
@@ -1297,6 +1361,9 @@ function openSettings() {
 
 function closeSettings() {
     document.getElementById('settingsModal').style.display = 'none';
+    
+    // Clear any listening states before closing
+    clearAllListeningStates();
     listeningForInput = -1;
     
     // Only update existing buttons, don't regenerate the entire grid
@@ -1331,6 +1398,9 @@ function updateExistingOptionsGrid() {
 
 // Hotkey Management
 function startListening(index) {
+    // First, clear any previous listening state
+    clearAllListeningStates();
+    
     listeningForInput = index;
     
     // Find the button by data-index attribute (for numpad layout)
@@ -1342,6 +1412,21 @@ function startListening(index) {
     
     // Focus on the button to ensure key events are captured
     button?.focus();
+}
+
+// Helper function to clear all listening states
+function clearAllListeningStates() {
+    const allHotkeyButtons = document.querySelectorAll('.hotkey-btn');
+    allHotkeyButtons.forEach((btn, idx) => {
+        if (btn.classList.contains('listening')) {
+            btn.classList.remove('listening');
+            // Restore original hotkey text
+            const dataIndex = btn.getAttribute('data-index');
+            if (dataIndex !== null) {
+                btn.textContent = gameState.hotkeys[parseInt(dataIndex)];
+            }
+        }
+    });
 }
 
 function updateHotkey(index, newKey) {
@@ -1359,9 +1444,18 @@ function updateHotkey(index, newKey) {
     }
 }
 
+// Global keyboard handler reference for proper cleanup
+let gameKeydownHandler = null;
+
 // Keyboard Controls
 function setupKeyboardListeners() {
-    document.addEventListener('keydown', (event) => {
+    // Remove existing listener if present
+    if (gameKeydownHandler) {
+        document.removeEventListener('keydown', gameKeydownHandler);
+    }
+    
+    // Create new handler
+    gameKeydownHandler = (event) => {
         // Check if we're listening for hotkey input in settings
         if (listeningForInput !== -1) {
             event.preventDefault();
@@ -1377,15 +1471,34 @@ function setupKeyboardListeners() {
             return;
         }
         
-        // Handle game hotkeys
-        const pressedKey = event.key.toUpperCase();
-        const optionIndex = gameState.hotkeys.indexOf(pressedKey);
-        
-        if (optionIndex !== -1) {
-            event.preventDefault();
-            selectOption(optionIndex);
+        // Don't interfere with input fields on landing page
+        if (document.getElementById('landingPage').style.display !== 'none') {
+            // Allow normal typing in input fields
+            if (event.target.tagName === 'INPUT' || event.target.tagName === 'TEXTAREA') {
+                return;
+            }
         }
-    });
+        
+        // Handle game hotkeys only when in game
+        if (document.getElementById('gamePage').style.display === 'flex') {
+            const pressedKey = event.key.toUpperCase();
+            const optionIndex = gameState.hotkeys.indexOf(pressedKey);
+            
+            if (optionIndex !== -1) {
+                event.preventDefault();
+                selectOption(optionIndex);
+            }
+        }
+    };
+    
+    document.addEventListener('keydown', gameKeydownHandler);
+}
+
+function removeKeyboardListeners() {
+    if (gameKeydownHandler) {
+        document.removeEventListener('keydown', gameKeydownHandler);
+        gameKeydownHandler = null;
+    }
 }
 
 // UI Update Functions
@@ -1589,6 +1702,13 @@ function startGame() {
         return;
     }
     
+    // Clear saved game state when starting new game
+    savedGameState = null;
+    const resumeButton = document.getElementById('resumeButton');
+    if (resumeButton) {
+        resumeButton.style.display = 'none';
+    }
+    
     // Always use custom range (no more allWords vs custom logic)
     const startIndex = parseInt(document.getElementById('startInput').value);
     const endIndex = parseInt(document.getElementById('endInput').value);
@@ -1646,9 +1766,79 @@ function shuffleArray(array) {
     return array;
 }
 
+// Save current game state for resume functionality
+function saveGameState() {
+    savedGameState = {
+        selectedWords: [...gameState.selectedWords],
+        currentWords: [...gameState.currentWords],
+        activeWordIndex: gameState.activeWordIndex,
+        wordProgress: JSON.parse(JSON.stringify(gameState.wordProgress)),
+        starsEarned: gameState.starsEarned,
+        completedWords: gameState.completedWords,
+        streakCount: gameState.streakCount,
+        lastAnswerTime: gameState.lastAnswerTime,
+        alreadyPenalized: gameState.alreadyPenalized,
+        tierRequirement: gameState.tierRequirement,
+        hotkeys: [...gameState.hotkeys],
+        easyMode: gameState.easyMode,
+        // Save additional game settings
+        gameSettings: JSON.parse(JSON.stringify(gameSettings)),
+        currentBand: currentBand,
+        useTraditional: useTraditional
+    };
+    console.log('Game state saved for resume');
+}
+
+// Resume game from saved state
+function resumeGame() {
+    if (!savedGameState) {
+        console.error('No saved game state to resume');
+        return false;
+    }
+    
+    console.log('Resuming saved game state');
+    
+    // Restore game state
+    gameState.selectedWords = [...savedGameState.selectedWords];
+    gameState.currentWords = [...savedGameState.currentWords];
+    gameState.activeWordIndex = savedGameState.activeWordIndex;
+    gameState.wordProgress = JSON.parse(JSON.stringify(savedGameState.wordProgress));
+    gameState.starsEarned = savedGameState.starsEarned;
+    gameState.completedWords = savedGameState.completedWords;
+    gameState.streakCount = savedGameState.streakCount;
+    gameState.lastAnswerTime = savedGameState.lastAnswerTime;
+    gameState.alreadyPenalized = savedGameState.alreadyPenalized;
+    gameState.tierRequirement = savedGameState.tierRequirement;
+    gameState.hotkeys = [...savedGameState.hotkeys];
+    gameState.easyMode = savedGameState.easyMode;
+    
+    // Restore settings
+    gameSettings = JSON.parse(JSON.stringify(savedGameState.gameSettings));
+    currentBand = savedGameState.currentBand;
+    useTraditional = savedGameState.useTraditional;
+    
+    // Update UI
+    document.getElementById('totalStarsCount').textContent = gameState.selectedWords.length;
+    document.getElementById('starsCount').textContent = gameState.starsEarned;
+    
+    // Switch to game page
+    document.getElementById('landingPage').style.display = 'none';
+    document.getElementById('gamePage').style.display = 'flex';
+    
+    // Initialize game
+    initializeGame();
+    
+    return true;
+}
+
 // Enhanced Return to Menu with Complete Cleanup
 function returnToMenu() {
-    console.log('=== STARTING COMPLETE STATE CLEANUP ===');
+    console.log('=== RETURNING TO MENU WITH GAME STATE PRESERVATION ===');
+    
+    // Save current game state for potential resume
+    if (gameState.selectedWords.length > 0) {
+        saveGameState();
+    }
     
     // Stop all audio and animations FIRST
     try {
@@ -1770,8 +1960,8 @@ function returnToMenu() {
         clearInterval(i);
     }
     
-    // Force garbage collection of event listeners
-    document.removeEventListener('keydown', setupKeyboardListeners);
+    // Properly remove keyboard listeners
+    removeKeyboardListeners();
     
     // Update settings toggles
     updateSettingsToggles();
@@ -1787,6 +1977,12 @@ function returnToMenu() {
     // Switch to landing page
     document.getElementById('gamePage').style.display = 'none';
     document.getElementById('landingPage').style.display = 'flex';
+    
+    // Show resume button if we have a saved game
+    const resumeButton = document.getElementById('resumeButton');
+    if (savedGameState && resumeButton) {
+        resumeButton.style.display = 'inline-block';
+    }
     
     console.log('=== RETURNED TO MENU SUCCESSFULLY ===');
 }
