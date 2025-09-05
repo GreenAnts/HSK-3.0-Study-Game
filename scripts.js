@@ -36,6 +36,7 @@ let gameState = {
     selectedWords: [], currentWords: [], activeWordIndex: 0, wordProgress: {},
     starsEarned: 0, completedWords: 0, charactersOnScreen: [], optionButtons: [],
     currentOptions: [], hotkeys: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'],
+    audioHotkey: ' ', // Spacebar for audio pronunciation
     streakCount: 0, lastAnswerTime: 0, alreadyPenalized: false, easyMode: false,
     tierRequirement: 5,
     
@@ -228,6 +229,68 @@ function stopCurrentTTS() {
         ttsState.currentAudio = null;
     }
     ttsState.isPlaying = false;
+}
+
+// Function to replay audio for the active character
+function replayActiveCharacterAudio() {
+    if (gameState.charactersOnScreen.length > 0 && gameSettings.tts.enabled) {
+        const activeCharacter = gameState.charactersOnScreen[0];
+        if (activeCharacter && activeCharacter.word) {
+            // Check if TTS is currently playing to prevent spam
+            if (ttsState.isPlaying) {
+                console.log('TTS already playing, ignoring replay request');
+                return;
+            }
+            
+            console.log('Replaying audio for active character:', activeCharacter.word.chinese);
+            playPronunciation(getChineseChar(activeCharacter.word));
+        }
+    }
+}
+
+// Helper function to set up click handler for active character
+function setupActiveCharacterClickHandler() {
+    // Remove click handlers from all character containers first
+    const allContainers = document.querySelectorAll('.character-container');
+    allContainers.forEach(container => {
+        container.removeEventListener('click', handleCharacterClick);
+        container.style.cursor = '';
+        container.title = '';
+        container.style.pointerEvents = '';
+    });
+    
+    // Add click handler only to active character
+    const activeContainer = document.querySelector('.character-container.active');
+    if (activeContainer) {
+        activeContainer.addEventListener('click', handleCharacterClick, { capture: true, passive: false });
+        activeContainer.style.cursor = 'pointer';
+        activeContainer.style.pointerEvents = 'all';
+        activeContainer.title = `Click to replay pronunciation (${getAudioHotkeyDisplayName()})`;
+        
+        // Also add click handlers to child elements to ensure clicks are captured
+        const childElements = activeContainer.querySelectorAll('*');
+        childElements.forEach(child => {
+            child.style.pointerEvents = 'none'; // Prevent event interference
+        });
+        
+        console.log('Click handler set up for active character:', activeContainer.querySelector('.chinese-char')?.textContent);
+    }
+}
+
+// Separate click handler for better debugging and control
+function handleCharacterClick(event) {
+    console.log('Active character clicked!', event.target);
+    event.preventDefault();
+    event.stopPropagation();
+    replayActiveCharacterAudio();
+}
+
+// Helper to get display name for audio hotkey
+function getAudioHotkeyDisplayName() {
+    if (gameState.audioHotkey === ' ') return 'SPACEBAR';
+    else if (gameState.audioHotkey === 'Enter') return 'ENTER';
+    else if (gameState.audioHotkey === 'Tab') return 'TAB';
+    else return gameState.audioHotkey.toUpperCase();
 }
 
 // Add TTS reset function for mobile issues
@@ -1073,6 +1136,7 @@ function setupCharactersRow() {
             <div class="chinese-char">${getChineseChar(word)}</div>
         `;
         
+        
         // Calculate container width based on content
         const chineseText = getChineseChar(word);
         const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
@@ -1084,6 +1148,9 @@ function setupCharactersRow() {
     
     // Position all character containers
     positionCharacterContainers();
+    
+    // Set up click handler for active character
+    setupActiveCharacterClickHandler();
 }
 
 function getRandomCurrentWord() {
@@ -1203,6 +1270,7 @@ function positionCharacterContainers() {
                 'translateX(-50%) scale(1.1)' : 
                 'translateX(-50%) scale(1.3)';
             container.style.zIndex = '100';
+            container.style.pointerEvents = 'auto'; // Ensure clicks work on active character
             gameState.activeWordIndex = 0;
         } else if (index <= 2) {
             container.classList.add('next');
@@ -1210,43 +1278,55 @@ function positionCharacterContainers() {
                 'translateX(-50%) scale(0.8)' : 
                 'translateX(-50%) scale(1.0)';
             container.style.zIndex = '5';
+            container.style.pointerEvents = 'none'; // Prevent interference with active character clicks
         } else {
             container.classList.add('upcoming');
             container.style.transform = isMobile ? 
                 'translateX(-50%) scale(0.6)' : 
                 'translateX(-50%) scale(0.8)';
             container.style.zIndex = '1';
+            container.style.pointerEvents = 'none'; // Prevent interference with active character clicks
         }
     });
     
-    // Position mascot to the RIGHT of active character
+    // Position mascot to the RIGHT of active character (fixed positioning relative to viewport)
     const mascotContainer = document.getElementById('mascotContainer');
     if (mascotContainer && gameState.charactersOnScreen.length > 0) {
         const activeContainer = gameState.charactersOnScreen[0];
         const activeWidth = activeContainer.width;
-        const mascotWidth = 120;
+        
+        // Calculate responsive mascot width based on viewport height (matches CSS clamp)
+        const viewportHeight = window.innerHeight;
+        const mascotWidth = Math.max(150, Math.min(220, viewportHeight * 0.20)); // 20vh with clamps
+        
+        // Get character row element for vertical positioning
+        const charactersRow = document.getElementById('charactersRow');
+        const rowRect = charactersRow.getBoundingClientRect();
         
         let mascotDistance;
         if (isMobile) {
             const activeScaledWidth = activeWidth * 1.1;
             const mascotScaledWidth = mascotWidth * 1.1;
-            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) + 50;
+            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 35; // Much closer, allowing overlap
         } else {
             const activeScaledWidth = activeWidth * 1.3;
             const mascotScaledWidth = mascotWidth * 1.3;
-            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) + 25;
+            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 40; // Much closer, allowing overlap
         }
         
+        // Position relative to page (absolute positioning)
         const activePos = screenCenter;
-        const mascotPos = activePos + mascotDistance;
+        const mascotPosX = activePos + mascotDistance;
+        const mascotPosY = charactersRow.offsetTop + (charactersRow.offsetHeight / 2) - 130; // Much higher up (top can be cut off)
         
-        mascotContainer.className = 'mascot-container';
-        mascotContainer.style.left = `${mascotPos}px`;
-        mascotContainer.style.transform = isMobile ? 
-            'translateX(-50%) scale(1.1)' : 
-            'translateX(-50%) scale(1.3)';
-        mascotContainer.style.zIndex = '200';
+        mascotContainer.style.left = `${mascotPosX}px`;
+        mascotContainer.style.top = `${mascotPosY}px`;
+        mascotContainer.style.transform = 'translate(-50%, -50%)'; // Center the mascot on its position
+        // z-index is handled by CSS (0 - behind all characters)
     }
+    
+    // Set up click handler for the new active character
+    setupActiveCharacterClickHandler();
 }
 
 // Mobile Menu Controls
@@ -1424,6 +1504,14 @@ function clearAllListeningStates() {
             const dataIndex = btn.getAttribute('data-index');
             if (dataIndex !== null) {
                 btn.textContent = gameState.hotkeys[parseInt(dataIndex)];
+            } else if (btn.id === 'audioHotkeyBtn') {
+                // Handle audio hotkey button specially
+                let displayKey = gameState.audioHotkey;
+                if (displayKey === ' ') displayKey = 'SPACE';
+                else if (displayKey === 'Enter') displayKey = 'ENTER';
+                else if (displayKey === 'Tab') displayKey = 'TAB';
+                else displayKey = displayKey.toUpperCase();
+                btn.textContent = displayKey;
             }
         }
     });
@@ -1444,6 +1532,45 @@ function updateHotkey(index, newKey) {
     }
 }
 
+// Audio hotkey management
+function startListeningForAudio() {
+    // Clear other listening states first
+    clearAllListeningStates();
+    listeningForInput = -1; // Not using numpad index system
+    
+    const audioButton = document.getElementById('audioHotkeyBtn');
+    if (audioButton) {
+        audioButton.classList.add('listening');
+        audioButton.textContent = '?';
+        audioButton.focus();
+        
+        // Set flag to indicate we're listening for audio hotkey
+        listeningForInput = 'audio';
+    }
+}
+
+function updateAudioHotkey(newKey) {
+    if (newKey.length >= 1) {
+        // Convert special keys to display names
+        let displayKey = newKey;
+        if (newKey === ' ') displayKey = 'SPACE';
+        else if (newKey === 'Enter') displayKey = 'ENTER';
+        else if (newKey === 'Tab') displayKey = 'TAB';
+        else displayKey = newKey.toUpperCase();
+        
+        gameState.audioHotkey = newKey;
+        
+        const audioButton = document.getElementById('audioHotkeyBtn');
+        if (audioButton) {
+            audioButton.textContent = displayKey;
+            audioButton.classList.remove('listening');
+        }
+        
+        listeningForInput = -1;
+        console.log('Audio hotkey updated to:', displayKey);
+    }
+}
+
 // Global keyboard handler reference for proper cleanup
 let gameKeydownHandler = null;
 
@@ -1459,7 +1586,11 @@ function setupKeyboardListeners() {
         // Check if we're listening for hotkey input in settings
         if (listeningForInput !== -1) {
             event.preventDefault();
-            updateHotkey(listeningForInput, event.key);
+            if (listeningForInput === 'audio') {
+                updateAudioHotkey(event.key);
+            } else {
+                updateHotkey(listeningForInput, event.key);
+            }
             return;
         }
         
@@ -1481,6 +1612,13 @@ function setupKeyboardListeners() {
         
         // Handle game hotkeys only when in game
         if (document.getElementById('gamePage').style.display === 'flex') {
+            // Handle dynamic audio hotkey for audio replay
+            if (event.key === gameState.audioHotkey) {
+                event.preventDefault();
+                replayActiveCharacterAudio();
+                return;
+            }
+            
             const pressedKey = event.key.toUpperCase();
             const optionIndex = gameState.hotkeys.indexOf(pressedKey);
             
@@ -1780,6 +1918,7 @@ function saveGameState() {
         alreadyPenalized: gameState.alreadyPenalized,
         tierRequirement: gameState.tierRequirement,
         hotkeys: [...gameState.hotkeys],
+        audioHotkey: gameState.audioHotkey,
         easyMode: gameState.easyMode,
         // Save additional game settings
         gameSettings: JSON.parse(JSON.stringify(gameSettings)),
@@ -1810,6 +1949,7 @@ function resumeGame() {
     gameState.alreadyPenalized = savedGameState.alreadyPenalized;
     gameState.tierRequirement = savedGameState.tierRequirement;
     gameState.hotkeys = [...savedGameState.hotkeys];
+    gameState.audioHotkey = savedGameState.audioHotkey || ' '; // Default to space if not saved
     gameState.easyMode = savedGameState.easyMode;
     
     // Restore settings
@@ -2046,8 +2186,34 @@ async function initializeApp() {
             }
         }
     }, 30000); // Check every 30 seconds
+    
+    // Add window resize listener for responsive character and mascot positioning
+    window.addEventListener('resize', handleWindowResize);
 
     console.log('App initialized with enhanced audio and UI support');
+}
+
+// Throttle resize events to prevent excessive repositioning
+let resizeTimeout = null;
+
+// Handle window resize to maintain proper character positioning
+function handleWindowResize() {
+    // Only reposition if we're in game and have characters on screen
+    if (document.getElementById('gamePage').style.display === 'flex' && 
+        gameState.charactersOnScreen.length > 0) {
+        
+        // Clear existing timeout to throttle resize events
+        if (resizeTimeout) {
+            clearTimeout(resizeTimeout);
+        }
+        
+        resizeTimeout = setTimeout(() => {
+            console.log('Window resized, repositioning characters and mascot');
+            positionCharacterContainers();
+            setupActiveCharacterClickHandler(); // Ensure click handlers are still working
+            resizeTimeout = null;
+        }, 150); // 150ms throttle for smooth performance
+    }
 }
 
 // Initialize range values on page load

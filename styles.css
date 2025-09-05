@@ -748,13 +748,66 @@ body {
     background: linear-gradient(45deg, var(--desert-sand), var(--peach-yellow));
 }
 
+/* Enhanced Hotkeys Layout */
+.hotkeys-layout {
+    display: flex;
+    gap: 15px; /* Reduced gap to better use space */
+    align-items: flex-start;
+    justify-content: space-between;
+    margin: 15px 0;
+}
+
+.hotkeys-left {
+    flex: 1; /* Audio control takes 1/2 of space */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hotkeys-right {
+    flex: 1; /* Answer options take 1/2 of space */
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+}
+
+.hotkeys-left h4,
+.hotkeys-right h4 {
+    color: var(--peach-yellow);
+    font-size: 1rem;
+    margin: 0;
+    text-align: center;
+}
+
+.hotkeys-divider {
+    width: 2px;
+    min-height: 100px; /* Slightly reduced to match proportional layout */
+    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.3), transparent);
+    border-radius: 2px;
+    flex-shrink: 0;
+}
+
+.audio-hotkey-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.hotkey-label {
+    font-size: 0.9rem;
+    color: white;
+    text-align: center;
+}
+
 /* Numpad-style hotkey layout */
 .hotkeys-numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
     gap: 8px;
-    max-width: 180px;
-    margin: 10px auto;
+    max-width: 240px; /* Increased for wider square buttons */
 }
 
 .hotkey-btn {
@@ -769,6 +822,10 @@ body {
     font-size: 0.9rem;
     transition: all 0.3s ease;
     aspect-ratio: 1;
+    width: auto;
+    height: auto;
+    min-width: 50px;
+    min-height: 50px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -834,24 +891,36 @@ body {
     object-fit: contain;
 }
 
+.mascot-container {
+    position: absolute; /* Absolute positioning to follow page scroll */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: clamp(200px, 25vh, 280px); /* Larger size for better visibility */
+    height: clamp(200px, 25vh, 280px);
+    pointer-events: none; /* Don't interfere with character clicks */
+    z-index: 0; /* Behind all character containers (which have z-index 1+) */
+    /* NOTE: Current mascot (walk.gif) has character at bottom of image. 
+       Positioning is now handled entirely by JavaScript relative to active character. */
+}
+
 #mascotImage {
-    position: relative;
-    top: -50px;
-    left: 215px;
-    width: 200px;
-    height: 200px;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    pointer-events: none; /* Ensure no click interference */
 }
 
 /* Enhanced Characters Row with better border */
 .characters-row {
-    height: 240px;
+    height: clamp(200px, 28vh, 320px); /* Increased height for better spacing */
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(90deg, rgba(217,174,148,0.3), rgba(241,220,167,0.3));
-    padding: 30px 0;
+    padding: clamp(20px, 5vh, 40px) 0; /* Increased vertical padding */
     border-bottom: 4px solid transparent;
     border-image: linear-gradient(90deg, var(--desert-sand), var(--peach-yellow), var(--desert-sand)) 1;
     box-shadow: 
@@ -871,9 +940,9 @@ body {
     transition: all 0.5s ease;
     min-width: 120px;
     max-width: 200px;
-    height: 150px;
+    height: clamp(120px, 18vh, 180px); /* Responsive container height */
     border: 3px solid transparent;
-    padding: 10px;
+    padding: clamp(8px, 1.5vh, 12px);
     box-sizing: border-box;
 }
 
@@ -1162,8 +1231,8 @@ body {
     .star-icon { font-size: 1.3rem; }
 
     .characters-row {
-        height: 200px;
-        padding: 15px 10px;
+        height: clamp(180px, 25vh, 240px); /* Increased mobile height for better spacing */
+        padding: clamp(15px, 4vh, 25px) 10px; /* Increased mobile vertical padding */
     }
 
     .mascot-icon {
@@ -1174,8 +1243,8 @@ body {
     .character-container {
         min-width: 90px;
         max-width: 130px;
-        height: 110px;
-        padding: 8px;
+        height: clamp(90px, 15vh, 130px); /* Responsive mobile container height */
+        padding: clamp(6px, 1.2vh, 10px);
     }
 
     .character-container.active {

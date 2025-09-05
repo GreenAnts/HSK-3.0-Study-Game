@@ -242,10 +242,29 @@
                     </div>
                 </div>
 
-                <!-- Hotkeys Section with Numpad Layout -->
+                <!-- Hotkeys Section with Improved Layout -->
                 <div class="settings-section">
-                    <h3>⌨️ Hotkeys (Numpad Layout)</h3>
-                    <div class="hotkeys-numpad" id="hotkeySettings"></div>
+                    <h3>⌨️ Hotkeys Configuration</h3>
+                    
+                    <div class="hotkeys-layout">
+                        <!-- Left Side: Audio Pronunciation -->
+                        <div class="hotkeys-left">
+                            <h4>🔊 Play Pronunciation</h4>
+                            <div class="audio-hotkey-container">
+                                <span class="hotkey-label">Hotkey:</span>
+                                <div class="hotkey-btn" id="audioHotkeyBtn" onclick="startListeningForAudio()" tabindex="0">SPACE</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Vertical Divider -->
+                        <div class="hotkeys-divider"></div>
+                        
+                        <!-- Right Side: Numpad Layout -->
+                        <div class="hotkeys-right">
+                            <h4>🎯 Answer Options</h4>
+                            <div class="hotkeys-numpad" id="hotkeySettings"></div>
+                        </div>
+                    </div>
                 </div>
 
             </div>
