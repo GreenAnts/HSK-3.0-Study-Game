@@ -1,6 +1,6 @@
 // Enhanced Game Settings with Audio Support
 let gameSettings = {
-    music: { enabled: false, volume: 0.05 },
+    music: { enabled: false, volume: 0.15 },
     sfx: { enabled: true, volume: 0.7 },
     tts: { enabled: true, volume: 0.8 }, // ADD this line
     ui: { showPinyin: true, pinyinMode: false, easyMode: false, traditional: false },

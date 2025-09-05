@@ -537,9 +537,14 @@ body {
 .audio-controls {
     display: flex;
     flex-direction: column;
-    gap: 8px; /* Reduced gap for more compact layout */
+    gap: 6px; /* Further reduced gap for more compact layout */
     align-items: center;
-    min-width: 150px;
+    min-width: 140px;
+}
+
+/* Gameplay Settings Section Styling */
+.settings-section.gameplay-section {
+    background: linear-gradient(45deg, rgba(255,203,105,0.1), rgba(208,140,96,0.1));
 }
 
 .volume-container {
@@ -699,41 +704,41 @@ body {
 
 .modal-content {
     background: linear-gradient(135deg, var(--reseda-green), var(--moss-green));
-    margin: 5% auto;
-    padding: 20px;
-    border-radius: 20px;
+    margin: 3% auto;
+    padding: 15px;
+    border-radius: 15px;
     width: 90%;
-    max-width: 500px; /* Made more compact */
+    max-width: 480px; /* Slightly more compact */
     color: white;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    max-height: 80vh;
+    max-height: 85vh;
     overflow-y: auto;
 }
 
 .settings-grid {
     display: grid;
     grid-template-columns: 1fr;
-    gap: 15px; /* Reduced gap */
+    gap: 10px; /* Further reduced gap for more compact layout */
 }
 
 .settings-section {
     background: rgba(255,255,255,0.1);
-    border-radius: 10px;
-    padding: 12px; /* Reduced padding */
+    border-radius: 8px;
+    padding: 10px; /* Further reduced padding */
 }
 
 .settings-section h3 {
     color: var(--peach-yellow);
-    margin-bottom: 10px;
-    font-size: 1.1rem;
+    margin-bottom: 8px;
+    font-size: 1rem; /* Slightly smaller heading */
 }
 
 .settings-row {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    margin: 8px 0;
-    gap: 10px;
+    margin: 6px 0; /* Reduced margin */
+    gap: 8px; /* Reduced gap */
 }
 
 .settings-divider {
@@ -751,10 +756,10 @@ body {
 /* Enhanced Hotkeys Layout */
 .hotkeys-layout {
     display: flex;
-    gap: 15px; /* Reduced gap to better use space */
+    gap: 12px; /* Further reduced gap for more compact layout */
     align-items: flex-start;
     justify-content: space-between;
-    margin: 15px 0;
+    margin: 10px 0; /* Reduced margin */
 }
 
 .hotkeys-left {
@@ -762,7 +767,7 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px; /* Reduced gap */
 }
 
 .hotkeys-right {
@@ -770,20 +775,20 @@ body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    gap: 10px;
+    gap: 8px; /* Reduced gap */
 }
 
 .hotkeys-left h4,
 .hotkeys-right h4 {
     color: var(--peach-yellow);
-    font-size: 1rem;
+    font-size: 0.9rem; /* Slightly smaller heading */
     margin: 0;
     text-align: center;
 }
 
 .hotkeys-divider {
     width: 2px;
-    min-height: 100px; /* Slightly reduced to match proportional layout */
+    min-height: 80px; /* Further reduced for more compact layout */
     background: linear-gradient(180deg, transparent, rgba(255,255,255,0.3), transparent);
     border-radius: 2px;
     flex-shrink: 0;
@@ -796,6 +801,14 @@ body {
     gap: 8px;
 }
 
+.audio-hotkey-container .hotkey-btn {
+    min-width: 80px;
+    min-height: 40px;
+    max-width: 120px;
+    padding: 8px 16px;
+    aspect-ratio: auto; /* Override square aspect ratio for audio button */
+}
+
 .hotkey-label {
     font-size: 0.9rem;
     color: white;
@@ -806,26 +819,26 @@ body {
 .hotkeys-numpad {
     display: grid;
     grid-template-columns: repeat(3, 1fr);
-    gap: 8px;
-    max-width: 240px; /* Increased for wider square buttons */
+    gap: 6px; /* Reduced gap for more compact layout */
+    max-width: 220px; /* Slightly reduced for more compact layout */
 }
 
 .hotkey-btn {
     background: rgba(255,255,255,0.2);
     border: 2px solid rgba(255,255,255,0.3);
-    padding: 8px;
+    padding: 6px; /* Reduced padding */
     border-radius: 6px;
     color: white;
     text-align: center;
     cursor: pointer;
     font-weight: bold;
-    font-size: 0.9rem;
+    font-size: 0.85rem; /* Slightly smaller font */
     transition: all 0.3s ease;
     aspect-ratio: 1;
     width: auto;
     height: auto;
-    min-width: 50px;
-    min-height: 50px;
+    min-width: 45px; /* Slightly smaller buttons */
+    min-height: 45px;
     display: flex;
     align-items: center;
     justify-content: center;
@@ -853,11 +866,11 @@ body {
     background: linear-gradient(45deg, var(--persian-orange), var(--beaver));
     color: white;
     border: none;
-    padding: 12px 24px;
-    border-radius: 10px;
+    padding: 10px 20px; /* Reduced padding */
+    border-radius: 8px;
     cursor: pointer;
-    font-size: 1rem;
-    margin: 20px auto 0;
+    font-size: 0.9rem; /* Slightly smaller font */
+    margin: 15px auto 0; /* Reduced margin */
     display: block;
     transition: all 0.3s ease;
 }

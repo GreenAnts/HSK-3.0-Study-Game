@@ -163,54 +163,57 @@
             <h2>⚙️ Game Settings</h2>
             <div class="settings-grid">
                 
-                <!-- Audio & Display Settings Combined -->
-                <div class="settings-section">
-                    <h3>🔊 Audio & Display</h3>
-                      <!-- Music Row -->
-                      <div class="settings-row">
-                          <div class="toggle-container">
-                              <span class="toggle-label">Music</span>
-                              <div class="toggle-switch" id="musicToggle" onclick="toggleMusic()">
-                                  <div class="toggle-slider"></div>
-                              </div>
-                          </div>
-                          <div class="volume-container">
-                              <input type="range" id="musicVolume" class="volume-slider" min="0" max="100" value="5" onchange="adjustMusicVolume()">
-                              <span class="volume-label" id="musicVolumeText">5%</span>
-                          </div>
-                      </div>
-                      
-                      <!-- SFX Row -->
-                      <div class="settings-row">
-                          <div class="toggle-container">
-                              <span class="toggle-label">SFX</span>
-                              <div class="toggle-switch active" id="sfxToggle" onclick="toggleSFX()">
-                                  <div class="toggle-slider"></div>
-                              </div>
-                          </div>
-                          <div class="volume-container">
-                              <input type="range" id="sfxVolume" class="volume-slider" min="0" max="100" value="70" onchange="adjustSFXVolume()">
-                              <span class="volume-label" id="sfxVolumeText">70%</span>
-                          </div>
-                      </div>
-                      
-                      <!-- TTS Row -->
-                      <div class="settings-row">
-                          <div class="toggle-container">
-                              <span class="toggle-label">Chinese TTS</span>
-                              <div class="toggle-switch active" id="ttsToggle" onclick="toggleTTS()">
-                                  <div class="toggle-slider"></div>
-                              </div>
-                          </div>
-                          <div class="volume-container">
-                              <input type="range" id="ttsVolume" class="volume-slider" min="0" max="100" value="80" onchange="adjustTTSVolume()">
-                              <span class="volume-label" id="ttsVolumeText">80%</span>
-                          </div>
-                      </div>
-                      
-                      <div class="settings-divider"></div>
+                <!-- Audio Settings Section -->
+                <div class="settings-section audio-section">
+                    <h3>🔊 Audio Settings</h3>
                     
-                    <!-- Display Row -->
+                    <!-- Music Row -->
+                    <div class="settings-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Music</span>
+                            <div class="toggle-switch" id="musicToggle" onclick="toggleMusic()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="volume-container">
+                            <input type="range" id="musicVolume" class="volume-slider" min="0" max="100" value="15" onchange="adjustMusicVolume()">
+                            <span class="volume-label" id="musicVolumeText">15%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- SFX Row -->
+                    <div class="settings-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">SFX</span>
+                            <div class="toggle-switch active" id="sfxToggle" onclick="toggleSFX()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="volume-container">
+                            <input type="range" id="sfxVolume" class="volume-slider" min="0" max="100" value="70" onchange="adjustSFXVolume()">
+                            <span class="volume-label" id="sfxVolumeText">70%</span>
+                        </div>
+                    </div>
+                    
+                    <!-- TTS Row -->
+                    <div class="settings-row">
+                        <div class="toggle-container">
+                            <span class="toggle-label">Chinese TTS</span>
+                            <div class="toggle-switch active" id="ttsToggle" onclick="toggleTTS()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="volume-container">
+                            <input type="range" id="ttsVolume" class="volume-slider" min="0" max="100" value="80" onchange="adjustTTSVolume()">
+                            <span class="volume-label" id="ttsVolumeText">80%</span>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Gameplay Settings Section -->
+                <div class="settings-section gameplay-section">
+                    <h3>🎮 Gameplay Settings</h3>
+                    
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Easy Mode</span>
@@ -218,21 +221,29 @@
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
+                    </div>
+                </div>
+
+                <!-- Display Settings Section -->
+                <div class="settings-section display-section">
+                    <h3>👁️ Display Settings</h3>
+                    
+                    <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Traditional</span>
                             <div class="toggle-switch" id="traditionalToggleSettings" onclick="toggleTraditional()">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Show Pinyin</span>
                             <div class="toggle-switch active" id="pinyinToggle" onclick="togglePinyin()">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
+                    </div>
+                    
+                    <div class="settings-row">
                         <div class="toggle-container" id="pinyinModeContainer">
                             <span class="toggle-label">Pinyin Mode</span>
                             <div class="toggle-switch" id="pinyinModeToggle" onclick="togglePinyinMode()">
@@ -249,9 +260,8 @@
                     <div class="hotkeys-layout">
                         <!-- Left Side: Audio Pronunciation -->
                         <div class="hotkeys-left">
-                            <h4>🔊 Play Pronunciation</h4>
+                            <h4>Play Pronunciation Again:</h4>
                             <div class="audio-hotkey-container">
-                                <span class="hotkey-label">Hotkey:</span>
                                 <div class="hotkey-btn" id="audioHotkeyBtn" onclick="startListeningForAudio()" tabindex="0">SPACE</div>
                             </div>
                         </div>
@@ -261,7 +271,7 @@
                         
                         <!-- Right Side: Numpad Layout -->
                         <div class="hotkeys-right">
-                            <h4>🎯 Answer Options</h4>
+                            <h4>Answer Options:</h4>
                             <div class="hotkeys-numpad" id="hotkeySettings"></div>
                         </div>
                     </div>
