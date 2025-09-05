@@ -1160,10 +1160,18 @@ function getRandomCurrentWord() {
 function setupOptionsGrid() {
     const optionsGrid = document.getElementById('optionsGrid');
     
+    // Preserve the voice button before cleanup
+    const voiceButton = document.getElementById('voiceReplayBtn');
+    
     // Complete cleanup
     optionsGrid.innerHTML = '';
     gameState.optionButtons = [];
     gameState.currentOptions = [];
+    
+    // Re-add the voice button after cleanup
+    if (voiceButton) {
+        optionsGrid.appendChild(voiceButton);
+    }
     
     // Create 10 option buttons
     for (let i = 0; i < 10; i++) {
@@ -2023,6 +2031,9 @@ function returnToMenu() {
     try {
         const optionsGrid = document.getElementById('optionsGrid');
         if (optionsGrid) {
+            // Preserve the voice button before cleanup
+            const voiceButton = document.getElementById('voiceReplayBtn');
+            
             const buttons = optionsGrid.querySelectorAll('.option-btn');
             buttons.forEach(button => {
                 // Remove ALL animation classes and inline styles
@@ -2036,6 +2047,11 @@ function returnToMenu() {
                 button.onclick = null;
             });
             optionsGrid.innerHTML = '';
+            
+            // Re-add the voice button after cleanup
+            if (voiceButton) {
+                optionsGrid.appendChild(voiceButton);
+            }
         }
         
         const charactersRow = document.getElementById('charactersRow');
