@@ -81,10 +81,7 @@ function loadHSKWords(band = 1) {
             hskWords = hskBands[band];
             console.log(`Loaded ${hskWords.length} words from HSK Band ${band}`);
             
-            const allWordsButton = document.getElementById('allWordsButton');
-            if (allWordsButton) {
-                allWordsButton.textContent = `All Words (Band ${band})`;
-            }
+            // Note: allWordsButton was removed - all buttons now say "Start Game"
             
             const maxWords = hskWords.length;
             document.getElementById('startInput').max = maxWords;
@@ -287,6 +284,11 @@ function handleCharacterClick(event) {
 
 // Helper to get display name for audio hotkey
 function getAudioHotkeyDisplayName() {
+    // Safety check for undefined audioHotkey
+    if (!gameState.audioHotkey) {
+        gameState.audioHotkey = ' '; // Default to spacebar
+    }
+    
     if (gameState.audioHotkey === ' ') return 'SPACEBAR';
     else if (gameState.audioHotkey === 'Enter') return 'ENTER';
     else if (gameState.audioHotkey === 'Tab') return 'TAB';
@@ -1053,6 +1055,11 @@ function initializeGame() {
     gameState.sadAnimationActive = false;
     gameState.mascotAnimationQueue = [];
     
+    // Ensure audioHotkey is preserved
+    if (!gameState.audioHotkey) {
+        gameState.audioHotkey = ' '; // Default to spacebar
+    }
+    
     console.log('State after reset:', {
         activeWordIndex: gameState.activeWordIndex,
         charactersOnScreen: gameState.charactersOnScreen.length,
@@ -1171,6 +1178,11 @@ function setupOptionsGrid() {
     // Re-add the voice button after cleanup
     if (voiceButton) {
         optionsGrid.appendChild(voiceButton);
+    }
+    
+    // Ensure we have words to work with
+    if (gameState.currentWords.length === 0 && gameState.selectedWords.length > 0) {
+        gameState.currentWords = gameState.selectedWords.slice(0, Math.min(10, gameState.selectedWords.length));
     }
     
     // Create 10 option buttons
@@ -2152,7 +2164,10 @@ async function changeBand() {
     const startButtons = document.querySelectorAll('.start-button');
     startButtons.forEach(btn => {
         btn.disabled = true;
-        btn.textContent = 'Loading...';
+        // Don't change text if this is the resume button
+        if (btn.id !== 'resumeButton') {
+            btn.textContent = 'Loading...';
+        }
     });
     
     // Load the selected band
@@ -2161,7 +2176,10 @@ async function changeBand() {
     // Re-enable buttons
     startButtons.forEach((btn, index) => {
         btn.disabled = false;
-        btn.textContent = index === 0 ? 'Start Game' : `All Words (Band ${selectedBand})`;
+        // Don't change text if this is the resume button
+        if (btn.id !== 'resumeButton') {
+            btn.textContent = 'Start Game'; // All buttons should say "Start Game"
+        }
     });
     
     if (success) {
@@ -2170,6 +2188,12 @@ async function changeBand() {
         // Reset selector if loading failed
         bandSelector.value = currentBand;
         alert(`Failed to load Band ${selectedBand} wordlist. Using Band ${currentBand}.`);
+    }
+    
+    // Ensure resume button visibility is preserved after band change
+    const resumeButton = document.getElementById('resumeButton');
+    if (savedGameState && resumeButton) {
+        resumeButton.style.display = 'inline-block';
     }
 }
 // App Initialization
