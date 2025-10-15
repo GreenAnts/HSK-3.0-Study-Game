@@ -1,0 +1,128 @@
+/* Chinese Font Definitions - Using Google Fonts Only (No Fallbacks) */
+
+/* These fonts are loaded from Google Fonts and guaranteed to be available */
+
+/* Font Classes - Using Google Fonts Only (No Fallbacks) */
+
+/* 1. 楷体 (Kaiti - Calligraphy) - Using Noto Serif SC/TC for calligraphy style */
+.hanzi-kaiti .chinese-char,
+.hanzi-kaiti .chinese-character,
+.hanzi-kaiti .character,
+.hanzi-kaiti .word-chinese,
+.hanzi-kaiti .character-display,
+.hanzi-kaiti .character-container,
+.hanzi-kaiti .word-chinese-text,
+.hanzi-kaiti .font-preview-text,
+.hanzi-kaiti [lang="zh"],
+.hanzi-kaiti [lang="zh-CN"],
+.hanzi-kaiti [lang="zh-TW"] {
+    font-family: 'Noto Serif SC', 'Noto Serif TC', serif !important;
+}
+
+/* 2. 宋体/明体 (Song/Ming - Traditional Serif) - Using Noto Serif SC/TC */
+.hanzi-song-ming .chinese-char,
+.hanzi-song-ming .chinese-character,
+.hanzi-song-ming .character,
+.hanzi-song-ming .word-chinese,
+.hanzi-song-ming .character-display,
+.hanzi-song-ming .character-container,
+.hanzi-song-ming .word-chinese-text,
+.hanzi-song-ming .font-preview-text,
+.hanzi-song-ming [lang="zh"],
+.hanzi-song-ming [lang="zh-CN"],
+.hanzi-song-ming [lang="zh-TW"] {
+    font-family: 'Noto Serif SC', 'Noto Serif TC', serif !important;
+}
+
+/* 3. 黑体 (Heiti - Bold Sans-serif) - Using Noto Sans SC/TC Bold */
+.hanzi-heiti .chinese-char,
+.hanzi-heiti .chinese-character,
+.hanzi-heiti .character,
+.hanzi-heiti .word-chinese,
+.hanzi-heiti .character-display,
+.hanzi-heiti .character-container,
+.hanzi-heiti .word-chinese-text,
+.hanzi-heiti .font-preview-text,
+.hanzi-heiti [lang="zh"],
+.hanzi-heiti [lang="zh-CN"],
+.hanzi-heiti [lang="zh-TW"] {
+    font-family: 'Noto Sans SC', 'Noto Sans TC', sans-serif !important;
+    font-weight: 700 !important;
+}
+
+/* 4. 仿宋 (FangSong - Elegant Serif) - Using Noto Serif SC/TC for elegant style */
+.hanzi-fangsong .chinese-char,
+.hanzi-fangsong .chinese-character,
+.hanzi-fangsong .character,
+.hanzi-fangsong .word-chinese,
+.hanzi-fangsong .character-display,
+.hanzi-fangsong .character-container,
+.hanzi-fangsong .word-chinese-text,
+.hanzi-fangsong .font-preview-text,
+.hanzi-fangsong [lang="zh"],
+.hanzi-fangsong [lang="zh-CN"],
+.hanzi-fangsong [lang="zh-TW"] {
+    font-family: 'Noto Serif SC', 'Noto Serif TC', serif !important;
+}
+
+/* 5. 行书 (XingShu - Semi-cursive) - Using Noto Sans SC/TC for cursive style */
+.hanzi-xingshu .chinese-char,
+.hanzi-xingshu .chinese-character,
+.hanzi-xingshu .character,
+.hanzi-xingshu .word-chinese,
+.hanzi-xingshu .character-display,
+.hanzi-xingshu .character-container,
+.hanzi-xingshu .word-chinese-text,
+.hanzi-xingshu .font-preview-text,
+.hanzi-xingshu [lang="zh"],
+.hanzi-xingshu [lang="zh-CN"],
+.hanzi-xingshu [lang="zh-TW"] {
+    font-family: 'Noto Sans SC', 'Noto Sans TC', sans-serif !important;
+}
+
+/* 6. 隶书 (LiShu - Clerical Script) - Using Noto Sans SC/TC for script style */
+.hanzi-lishu .chinese-char,
+.hanzi-lishu .chinese-character,
+.hanzi-lishu .character,
+.hanzi-lishu .word-chinese,
+.hanzi-lishu .character-display,
+.hanzi-lishu .character-container,
+.hanzi-lishu .word-chinese-text,
+.hanzi-lishu .font-preview-text,
+.hanzi-lishu [lang="zh"],
+.hanzi-lishu [lang="zh-CN"],
+.hanzi-lishu [lang="zh-TW"] {
+    font-family: 'Noto Sans SC', 'Noto Sans TC', sans-serif !important;
+}
+
+/* 7. 等宽字体 (Monospace - Fixed Width) - Using Noto Sans Mono SC/TC */
+.hanzi-monospace .chinese-char,
+.hanzi-monospace .chinese-character,
+.hanzi-monospace .character,
+.hanzi-monospace .word-chinese,
+.hanzi-monospace .character-display,
+.hanzi-monospace .character-container,
+.hanzi-monospace .word-chinese-text,
+.hanzi-monospace .font-preview-text,
+.hanzi-monospace [lang="zh"],
+.hanzi-monospace [lang="zh-CN"],
+.hanzi-monospace [lang="zh-TW"] {
+    font-family: 'Noto Sans Mono SC', 'Noto Sans Mono TC', monospace !important;
+    letter-spacing: 1px !important;
+}
+
+/* 8. 微软雅黑 (Microsoft YaHei - Modern Sans-serif) - Using Noto Sans SC/TC */
+.hanzi-yahei .chinese-char,
+.hanzi-yahei .chinese-character,
+.hanzi-yahei .character,
+.hanzi-yahei .word-chinese,
+.hanzi-yahei .character-display,
+.hanzi-yahei .character-container,
+.hanzi-yahei .word-chinese-text,
+.hanzi-yahei .font-preview-text,
+.hanzi-yahei [lang="zh"],
+.hanzi-yahei [lang="zh-CN"],
+.hanzi-yahei [lang="zh-TW"] {
+    font-family: 'Noto Sans SC', 'Noto Sans TC', sans-serif !important;
+    font-weight: 400 !important;
+}

@@ -1,0 +1,25 @@
+{
+  "appId": "com.hskchinese.game",
+  "appName": "HSK Chinese Game",
+  "webDir": "www",
+  "android": {
+    "contentInset": "hybrid",
+    "allowMixedContent": true
+  },
+  "plugins": {
+    "SafeArea": {
+      "config": {
+        "customColorsForSystemBars": true,
+        "statusBarColor": "#797d62",
+        "statusBarContent": "light",
+        "navigationBarColor": "#797d62",
+        "navigationBarContent": "light"
+      }
+    },
+    "StatusBar": {
+      "style": "light",
+      "backgroundColor": "#797d62",
+      "overlaysWebView": true
+    }
+  }
+}

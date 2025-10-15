@@ -1,0 +1,21 @@
+{
+  "name": "HSK 3.0 Chinese Vocabulary Game",
+  "short_name": "HSK Chinese Game",
+  "description": "Learn Chinese vocabulary with HSK 3.0 word lists through an interactive game",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#797d62",
+  "theme_color": "#797d62",
+  "orientation": "portrait",
+  "icons": [
+    {
+      "src": "icon.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["education", "games"],
+  "lang": "en",
+  "dir": "ltr"
+}

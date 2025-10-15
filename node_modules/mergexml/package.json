@@ -1,0 +1,40 @@
+{
+  "name": "mergexml",
+  "version": "1.2.4",
+  "description": "Merge multiple XML sources",
+  "main": "mergexml.js",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/hareko/js-merge-xml"
+  },
+  "scripts": {
+    "test": "karma start test/all.conf.js"
+  },
+  "keywords": [
+    "xml",
+    "merge"
+  ],
+  "author": "Vallo Reima",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/hareko/js-merge-xml/issues"
+  },
+  "dependencies": {
+    "formidable": "^3.5.1",
+    "@xmldom/xmldom": "^0.7.0",
+    "xpath": "0.0.27"
+  },
+  "devDependencies": {
+    "chai": "3.0.x",
+    "jasmine-core": "2.0.x",
+    "karma": "1.3.x",
+    "karma-chai": "0.1.x",
+    "karma-chrome-launcher": "2.0.x",
+    "karma-firefox-launcher": "1.0.x",
+    "karma-jasmine": "0.3.x",
+    "karma-mocha": "1.2.x",
+    "karma-opera-launcher": "1.0.x",
+    "karma-safari-launcher": "1.0.x",
+    "mocha": "3.1.x"
+  }
+}

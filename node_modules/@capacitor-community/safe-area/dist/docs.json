@@ -1,0 +1,277 @@
+{
+  "api": {
+    "name": "SafeAreaPlugin",
+    "slug": "safeareaplugin",
+    "docs": "",
+    "tags": [],
+    "methods": [
+      {
+        "name": "enable",
+        "signature": "(options: { config: Config; }) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ config: Config; }"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [
+          "Config"
+        ],
+        "slug": "enable"
+      },
+      {
+        "name": "disable",
+        "signature": "(options: { config: Config; }) => Promise<void>",
+        "parameters": [
+          {
+            "name": "options",
+            "docs": "",
+            "type": "{ config: Config; }"
+          }
+        ],
+        "returns": "Promise<void>",
+        "tags": [],
+        "docs": "",
+        "complexTypes": [
+          "Config"
+        ],
+        "slug": "disable"
+      }
+    ],
+    "properties": []
+  },
+  "interfaces": [
+    {
+      "name": "Config",
+      "slug": "config",
+      "docs": "",
+      "tags": [],
+      "methods": [],
+      "properties": [
+        {
+          "name": "customColorsForSystemBars",
+          "tags": [
+            {
+              "text": "true",
+              "name": "example"
+            },
+            {
+              "text": "true",
+              "name": "default"
+            }
+          ],
+          "docs": "Flag indicating that you are responsible for drawing the background color for the system bars.\nIf `false` it will fallback to the default colors for the system bars.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "statusBarColor",
+          "tags": [
+            {
+              "text": "'#000000'",
+              "name": "example"
+            },
+            {
+              "text": "'#000000'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the background color of the status bar.\nShould be in the format `#RRGGBB` or `#AARRGGBB`.\nWill only have effect if `customColorsForSystemBars` is set to `true`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "statusBarContent",
+          "tags": [
+            {
+              "text": "'light'",
+              "name": "example"
+            },
+            {
+              "text": "'light'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the color of the content (i.e. icon color) in the status bar.",
+          "complexTypes": [],
+          "type": "'light' | 'dark' | undefined"
+        },
+        {
+          "name": "navigationBarColor",
+          "tags": [
+            {
+              "text": "'#000000'",
+              "name": "example"
+            },
+            {
+              "text": "'#000000'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the background color of the navigation bar.\nShould be in the format `#RRGGBB` or `#AARRGGBB`.\nWill only have effect if `customColorsForSystemBars` is set to `true`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "navigationBarContent",
+          "tags": [
+            {
+              "text": "'light'",
+              "name": "example"
+            },
+            {
+              "text": "'light'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the color of the content (i.e. icon color) in the navigation bar.",
+          "complexTypes": [],
+          "type": "'light' | 'dark' | undefined"
+        },
+        {
+          "name": "offset",
+          "tags": [
+            {
+              "text": "0",
+              "name": "example"
+            },
+            {
+              "text": "0",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the offset to be applied to the safe area insets.\nThis means that if the safe area top inset is 30px, and the offset specified is 10px,\nthe safe area top inset will be exposed as being 40px.\nUsually you don't need this, but on iOS the safe area insets are mostly offset a little more\nby itself already. So you might want to compensate for that on Android. It's totally up to you.\nThe offset will be applied if Edge-to-Edge mode is enabled only.",
+          "complexTypes": [],
+          "type": "number | undefined"
+        }
+      ]
+    }
+  ],
+  "enums": [],
+  "typeAliases": [],
+  "pluginConfigs": [
+    {
+      "name": "SafeArea",
+      "slug": "safearea",
+      "properties": [
+        {
+          "name": "enabled",
+          "tags": [
+            {
+              "text": "true",
+              "name": "example"
+            },
+            {
+              "text": "false",
+              "name": "default"
+            }
+          ],
+          "docs": "Flag indicating whether of not the plugin should be enabled from startup.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "customColorsForSystemBars",
+          "tags": [
+            {
+              "text": "true",
+              "name": "example"
+            },
+            {
+              "text": "true",
+              "name": "default"
+            }
+          ],
+          "docs": "Flag indicating that you are responsible for drawing the background color for the system bars.\nIf `false` it will fallback to the default colors for the system bars.",
+          "complexTypes": [],
+          "type": "boolean | undefined"
+        },
+        {
+          "name": "statusBarColor",
+          "tags": [
+            {
+              "text": "'#000000'",
+              "name": "example"
+            },
+            {
+              "text": "'#000000'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the background color of the status bar.\nShould be in the format `#RRGGBB` or `#AARRGGBB`.\nWill only have effect if `customColorsForSystemBars` is set to `true`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "statusBarContent",
+          "tags": [
+            {
+              "text": "'light'",
+              "name": "example"
+            },
+            {
+              "text": "'light'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the color of the content (i.e. icon color) in the status bar.",
+          "complexTypes": [],
+          "type": "'light' | 'dark' | undefined"
+        },
+        {
+          "name": "navigationBarColor",
+          "tags": [
+            {
+              "text": "'#000000'",
+              "name": "example"
+            },
+            {
+              "text": "'#000000'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the background color of the navigation bar.\nShould be in the format `#RRGGBB` or `#AARRGGBB`.\nWill only have effect if `customColorsForSystemBars` is set to `true`.",
+          "complexTypes": [],
+          "type": "string | undefined"
+        },
+        {
+          "name": "navigationBarContent",
+          "tags": [
+            {
+              "text": "'light'",
+              "name": "example"
+            },
+            {
+              "text": "'light'",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the color of the content (i.e. icon color) in the navigation bar.",
+          "complexTypes": [],
+          "type": "'light' | 'dark' | undefined"
+        },
+        {
+          "name": "offset",
+          "tags": [
+            {
+              "text": "0",
+              "name": "example"
+            },
+            {
+              "text": "0",
+              "name": "default"
+            }
+          ],
+          "docs": "Specifies the offset to be applied to the safe area insets.\nThis means that if the safe area top inset is 30px, and the offset specified is 10px,\nthe safe area top inset will be exposed as being 40px.\nUsually you don't need this, but on iOS the safe area insets are mostly offset a little more\nby itself already. So you might want to compensate for that on Android. It's totally up to you.\nThe offset will be applied if Edge-to-Edge mode is enabled only.",
+          "complexTypes": [],
+          "type": "number | undefined"
+        }
+      ],
+      "docs": "For ease of use and speed, these configuration values are available:"
+    }
+  ]
+}

@@ -1,0 +1,33 @@
+{
+  "name": "game-mobile",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "build": "npx cap sync",
+    "android": "npx cap open android",
+    "ios": "npx cap open ios",
+    "serve": "npx serve www -l 3000",
+    "dev": "npx serve www -l 3000",
+    "sync": "npx cap sync",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "@capacitor-community/safe-area": "^7.0.0-alpha.1",
+    "@capacitor-community/text-to-speech": "^6.0.0",
+    "@capacitor/android": "^7.4.3",
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^7.4.3",
+    "@capacitor/core": "^7.4.3",
+    "@capacitor/ios": "^7.4.3",
+    "@capacitor/preferences": "^7.0.2",
+    "@capacitor/status-bar": "^7.0.3",
+    "hanzi-writer": "^3.7.2"
+  },
+  "devDependencies": {
+    "serve": "^14.2.5"
+  }
+}
