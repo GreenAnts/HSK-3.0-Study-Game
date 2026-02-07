@@ -14,20 +14,27 @@
     <title>HSK 3.0 Chinese Vocabulary Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
-    <!-- Google Fonts for typography -->
+    
+    <script src="https://code.iconify.design/iconify-icon/2.1.0/iconify-icon.min.js"></script>
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <!-- Keep UI fonts (Inter, Poppins) and include only required Hanzi families -->
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@300;400;500;600;700&family=Ma+Shan+Zheng&family=LXGW+WenKai+Mono+TC:wght@400;500;700&family=Long+Cang&display=swap" rel="stylesheet">
-    <!-- Protest Revolution Font - Separate Link -->
     <link href="https://fonts.googleapis.com/css2?family=Protest+Revolution&display=swap" rel="stylesheet">
-    <!-- Fonts -->
+    
     <link rel="stylesheet" href="fonts/fonts.css">
-    <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
+    
+    <style>
+        /* Small helper to align iconify icons with text */
+        iconify-icon {
+            vertical-align: middle;
+            display: inline-block;
+            margin-top: -2px;
+        }
+    </style>
 </head>
 <body>
-    <!-- Native Loading Overlay -->
     <div class="app-loading-overlay" id="appLoadingOverlay">
         <div class="loading-logo">
             <img src="icon.png" alt="HSK 3.0 Icon" />
@@ -37,21 +44,18 @@
         </div>
     </div>
 
-    <!-- App Content - Hidden until loading complete -->
     <div class="app-content" id="appContent">
-    <!-- Landing Page -->
     <div class="landing-page" id="landingPage">
         <h1>HSK 3.0<br>Vocabulary Study Game</h1>
         <div class="selection-container">
-            <!-- Settings Button positioned in top right of container -->
             <div class="selection-header">
                 <button class="vintage-settings-btn" onclick="openSettings()">
                     <i class="fas fa-cog"></i>
                 </button>
             </div>
-            <!-- Band Selection Section -->
+            
             <div class="config-section band-section">
-                <h3>📚 Select HSK Band</h3>
+                <h3><iconify-icon icon="mdi:book-open-variant" class="mr-1"></iconify-icon> Select HSK Band</h3>
                 <div class="slider-container">
                     <select class="tier-dropdown" id="bandSelector" onchange="changeBand()">
                         <option value="1" selected>Band 1</option>
@@ -61,12 +65,10 @@
                 </div>
             </div>
 
-            <!-- Word Range Section -->
             <div class="config-section range-section">
-                <h3>🎯 Select Word Range</h3>
+                <h3><iconify-icon icon="mdi:target" class="mr-1"></iconify-icon> Select Word Range</h3>
                 <div class="slider-container">
                     <div class="range-input-container">
-                        <!-- Labels row -->
                         <div class="range-labels-row">
                             <div class="range-label-item">From:</div>
                             <div class="range-label-spacer"></div>
@@ -74,7 +76,6 @@
                             <div class="range-label-spacer"></div>
                             <div class="range-label-item">Quick:</div>
                         </div>
-                        <!-- Inputs row -->
                         <div class="range-inputs-row">
                             <input type="number" id="startInput" class="range-input" min="1" max="50" value="1" onchange="updateRange()" onblur="updateRange()">
                             <span class="range-separator">—</span>
@@ -93,9 +94,8 @@
                 </div>
             </div>
 
-            <!-- Game Options Section -->
             <div class="config-section options-section">
-                <h3>⚙️ Game Options</h3>
+                <h3><iconify-icon icon="mdi:cog" class="mr-1"></iconify-icon> Game Options</h3>
                 <div class="game-options-vertical">
                     <div class="option-item">
                         <div class="checkbox-container">
@@ -109,32 +109,15 @@
                             <label>Correct answers per tier:</label>
                             <select class="tier-dropdown" id="landingTierRequirement" onchange="updateTierRequirement()">
                                 <option value="1">1</option>
-                                <option value="2">2</option>
                                 <option value="3" selected>3</option>
-                                <option value="4">4</option>
                                 <option value="5">5</option>
-                                <option value="6">6</option>
-                                <option value="7">7</option>
-                                <option value="8">8</option>
-                                <option value="9">9</option>
                                 <option value="10">10</option>
-                                <option value="11">11</option>
-                                <option value="12">12</option>
-                                <option value="13">13</option>
-                                <option value="14">14</option>
-                                <option value="15">15</option>
-                                <option value="16">16</option>
-                                <option value="17">17</option>
-                                <option value="18">18</option>
-                                <option value="19">19</option>
-                                <option value="20">20</option>
                             </select>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Start Game Section -->
             <div class="config-section controls-section">
                 <div class="landing-buttons-container">
                     <button class="start-button" id="resumeButton" onclick="resumeGame()" style="display: none; background: linear-gradient(45deg, var(--sunglow), var(--persian-orange));">Resume</button>
@@ -143,26 +126,24 @@
             </div>
         </div>
     </div>
-    <!-- Game Page -->
+
     <div class="game-page" id="gamePage">
         <div class="score-bar">
-            <!-- Left: single Menu button (mirror of settings placement) -->
-            <button class="vintage-settings-btn menu-left-btn" onclick="returnToMenu()" aria-label="Menu">← Menu</button>
-
-            <!-- Right: settings cog (icon-only, no background) -->
-            <button class="vintage-settings-btn settings-cog-btn" onclick="openSettings()" aria-label="Settings">
-                <i class="fas fa-cog"></i>
+            <button class="vintage-settings-btn menu-left-btn" onclick="returnToMenu()" aria-label="Menu">
+                <iconify-icon icon="mdi:arrow-left" class="mr-1"></iconify-icon> Menu
             </button>
 
-            <!-- Stars counter (truly centered now) -->
+            <button class="vintage-settings-btn settings-cog-btn" onclick="openSettings()" aria-label="Settings">
+                <iconify-icon icon="mdi:cog" class="text-xl"></iconify-icon>
+            </button>
+
             <div class="stars-counter">
-                <span class="star-icon" id="starIcon">⭐</span>
+                <iconify-icon icon="mdi:star" id="starIcon" class="text-yellow-400 mr-1"></iconify-icon>
                 <span id="starsCount">0</span> / <span id="totalStarsCount">0</span>
             </div>
         </div>
         
         <div class="characters-row" id="charactersRow">
-            <!-- Mascot container - independent styling -->
             <div class="mascot-container" id="mascotContainer">
                 <img id="mascotImage" src="Mascot/walk.gif" alt="Mascot" />
             </div>
@@ -170,28 +151,23 @@
         
         <div class="options-container">
             <div class="options-grid" id="optionsGrid">
-                <!-- Voice replay button positioned within grid -->
-                <button class="voice-replay-btn" id="voiceReplayBtn" onclick="replayActiveCharacterAudio()" title="Play pronunciation again">
-                    <i class="fas fa-volume-up"></i>
+                <button class="voice-replay-btn" id="voiceReplayBtn" onclick="replayActiveCharacterAudio()">
+                    <iconify-icon icon="mdi:volume-high"></iconify-icon>
                 </button>
-                <!-- Hanzi quiz button positioned to the left of voice button -->
-                <button class="hanzi-quiz-btn" id="hanziQuizBtn" onclick="openHanziQuiz()" title="Practice writing this character">
-                    <i class="fas fa-pen"></i>
+                <button class="hanzi-quiz-btn" id="hanziQuizBtn" onclick="openHanziQuiz()">
+                    <iconify-icon icon="mdi:fountain-pen-tip"></iconify-icon>
                 </button>
             </div>
         </div>
     </div>
-    <!-- Enhanced Settings Modal -->
+
     <div id="settingsModal" class="modal">
         <div class="modal-content">
-            <h2>⚙️ Game Settings</h2>
+            <h2><iconify-icon icon="mdi:cog" class="mr-2"></iconify-icon> Game Settings</h2>
             <div class="settings-grid">
                 
-                <!-- Audio Settings Section -->
                 <div class="settings-section audio-section">
-                    <h3>🔊 Audio Settings</h3>
-                    
-                    <!-- Music Row -->
+                    <h3><iconify-icon icon="mdi:volume-high" class="mr-2"></iconify-icon> Audio Settings</h3>
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Music</span>
@@ -205,7 +181,6 @@
                         </div>
                     </div>
                     
-                    <!-- SFX Row -->
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">SFX</span>
@@ -219,7 +194,6 @@
                         </div>
                     </div>
                     
-                    <!-- TTS Row -->
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Chinese TTS</span>
@@ -232,21 +206,10 @@
                             <span class="volume-label" id="ttsVolumeText">80%</span>
                         </div>
                     </div>
-                    
-                    <!-- TTS Debug Button (Hidden for production, available for debugging) -->
-                    <!-- 
-                    <div class="settings-row" id="ttsDebugButton">
-                        <button onclick="window.testTTSSettings()" style="width: 100%; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 4px; margin-top: 8px;">
-                            🔧 Test TTS Settings Opening
-                        </button>
-                    </div>
-                    -->
                 </div>
                 
-                <!-- Gameplay Settings Section -->
                 <div class="settings-section gameplay-section">
-                    <h3>🎮 Gameplay Settings</h3>
-                    
+                    <h3><iconify-icon icon="mdi:controller" class="mr-2"></iconify-icon> Gameplay Settings</h3>
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Prevent Tier Losses</span>
@@ -263,10 +226,8 @@
                     </div>
                 </div>
 
-                <!-- Display Settings Section -->
                 <div class="settings-section display-section">
-                    <h3>👁️ Display Settings</h3>
-                    
+                    <h3><iconify-icon icon="mdi:eye" class="mr-2"></iconify-icon> Display Settings</h3>
                     <div class="settings-row">
                         <div class="toggle-container">
                             <span class="toggle-label">Traditional</span>
@@ -291,9 +252,9 @@
                     <div class="settings-row">
                         <div class="dropdown-container">
                             <span class="dropdown-label">汉字字体 (Hanzi Font)</span>
-                <select id="hanziFontSelect" class="font-dropdown" onchange="changeHanziFont()" oninput="updateFontPreview()">
-                    <option value="">Loading fonts...</option>
-                </select>
+                            <select id="hanziFontSelect" class="font-dropdown" onchange="changeHanziFont()" oninput="updateFontPreview()">
+                                <option value="">Loading fonts...</option>
+                            </select>
                             <div class="font-preview-container">
                                 <div id="fontPreview" class="font-preview-text">让我们一起快乐地学习中文！</div>
                             </div>
@@ -301,23 +262,16 @@
                     </div>
                 </div>
 
-                <!-- Hotkeys Section - Hidden on Mobile -->
                 <div class="settings-section hotkeys-section" id="hotkeysSection">
-                    <h3>⌨️ Hotkeys Configuration</h3>
-                    
+                    <h3><iconify-icon icon="mdi:keyboard" class="mr-2"></iconify-icon> Hotkeys Configuration</h3>
                     <div class="hotkeys-layout">
-                        <!-- Left Side: Audio Pronunciation -->
                         <div class="hotkeys-left">
                             <h4>Play Pronunciation Again:</h4>
                             <div class="audio-hotkey-container">
-                                <div class="hotkey-btn" id="audioHotkeyBtn" onclick="startListeningForAudio()" tabindex="0">SPACE</div>
+                                <div class="hotkey-btn" id="audioHotkeyBtn" onclick="startListeningForAudio()">SPACE</div>
                             </div>
                         </div>
-                        
-                        <!-- Vertical Divider -->
                         <div class="hotkeys-divider"></div>
-                        
-                        <!-- Right Side: Numpad Layout -->
                         <div class="hotkeys-right">
                             <h4>Answer Options:</h4>
                             <div class="hotkeys-numpad" id="hotkeySettings"></div>
@@ -330,19 +284,16 @@
         </div>
     </div>
     
-    <!-- Hanzi Quiz Modal -->
     <div id="hanziQuizModal" class="hanzi-quiz-modal">
         <div class="hanzi-quiz-content">
-            <button class="hanzi-close-btn" onclick="closeHanziQuiz()">×</button>
+            <button class="hanzi-close-btn" onclick="closeHanziQuiz()">
+                <iconify-icon icon="mdi:close"></iconify-icon>
+            </button>
             <div class="hanzi-quiz-header">
                 <h2>Character Writing Practice</h2>
-                <div class="hanzi-quiz-character" id="hanziQuizCharacter">
-                    <!-- Character info will be populated here -->
-                </div>
+                <div class="hanzi-quiz-character" id="hanziQuizCharacter"></div>
             </div>
-            <div class="hanzi-writing-area" id="hanziWritingArea">
-                <!-- HanziWriter canvas will be created here -->
-            </div>
+            <div class="hanzi-writing-area" id="hanziWritingArea"></div>
             <div class="hanzi-quiz-controls">
                 <button class="hanzi-control-btn" id="characterToggleBtn" onclick="toggleCharacterDisplay()">Show Outline</button>
                 <button class="hanzi-control-btn" onclick="restartHanziQuiz()">Restart</button>
@@ -350,63 +301,42 @@
         </div>
     </div>
     
-    <!-- Footer with vintage green background -->
     <footer class="bg-[#797d62] text-white py-4 border-t border-gray-700 mt-auto">
         <div class="container mx-auto px-4 flex flex-col sm:flex-row justify-between items-center">
-            <!-- Left aligned content (Patreon and GitHub) -->
             <div class="flex flex-col sm:items-start items-center mb-2 sm:mb-0">
                 <p class="text-sm mb-1 rounded-md flex items-center">
-                    <i class="fab fa-patreon text-lg mr-2"></i> <!-- Patreon Icon -->
+                    <iconify-icon icon="mdi:patreon" class="text-lg mr-2"></iconify-icon>
                     Patreon:
-                    <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        @UnfinishedProjects
-                    </a>
+                    <a href="https://www.patreon.com/UnfinishedProjects" target="_blank" class="text-blue-100 hover:underline px-2 py-1">@UnfinishedProjects</a>
                 </p>
                 <p class="text-sm rounded-md flex items-center">
-                    <i class="fab fa-github text-lg mr-2"></i> <!-- GitHub Icon -->
-                    GitHub Repository:
-                    <a href="https://github.com/GreenAnts/HSK-3.0-Study-Game" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        HSK-3.0-Study-Game
-                    </a>
+                    <iconify-icon icon="mdi:github" class="text-lg mr-2"></iconify-icon>
+                    GitHub:
+                    <a href="https://github.com/GreenAnts/HSK-3.0-Study-Game" target="_blank" class="text-blue-100 hover:underline px-2 py-1">HSK-3.0-Study-Game</a>
                 </p>
             </div>
 
-            <!-- Right aligned content (Mascot Attribution) -->
             <div class="flex flex-col sm:items-end items-center">
                 <p class="text-sm rounded-md flex items-center">
-                    <i class="fas fa-palette text-lg mr-2"></i> <!-- Palette Icon for Itch.io (Art Attribution) -->
+                    <iconify-icon icon="mdi:palette-outline" class="text-lg mr-2"></iconify-icon>
                     Attributions:
-                    <a href="https://atari-boy.itch.io/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        Atari Boy (Mascot Animation)
-                    </a>|
-                    <a href="https://www.chosic.com/download-audio/53268/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        Mountain Legend (Music)
-                    </a>|
-                    <a href="https://pixabay.com/sound-effects/simple-whoosh-382724/" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        DRAGON-STUDIO (Click Sound Effect)
-                    </a>|
-                    <a href="https://bdragon1727.itch.io/free-smoke-fx-pixel-2" target="_blank" rel="noopener noreferrer" class="text-blue-100 hover:underline font-medium rounded-md px-2 py-1 transition duration-300 ease-in-out">
-                        BDragon1727 (Click Animation)
-                    </a>
+                    <a href="https://atari-boy.itch.io/" target="_blank" class="text-blue-100 hover:underline px-1">Atari Boy</a> |
+                    <a href="https://www.chosic.com/" target="_blank" class="text-blue-100 hover:underline px-1">Chosic</a>
                 </p>
             </div>
         </div>
     </footer>
-    <!-- Background Music Audio Element -->
+
     <audio id="backgroundMusic" loop preload="auto">
         <source src="Music/background.ogg" type="audio/ogg">
         <source src="Music/background.mp3" type="audio/mp3">
     </audio>
-    <!-- Load HSK Word Data Files -->
+
     <script src="wordlists/band-1-words.js"></script>
     <script src="wordlists/band-2-words.js"></script>
     <script src="wordlists/band-3-words.js"></script>
-    <!-- Hanzi Writer for character writing quizzes -->
     <script src="hanzi-writer.min.js"></script>
-    <!-- Font Loader -->
     <script src="fonts/font-loader.js"></script>
-    
-    <!-- Scripts -->
     <script src="tts-module.js"></script>
     <script src="scripts.js"></script>
 </body>
