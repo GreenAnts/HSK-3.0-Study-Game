@@ -1919,21 +1919,15 @@ function setupOptionsGrid() {
     const optionsGrid = document.getElementById('optionsGrid');
     
     // Preserve the control buttons before cleanup
-    const voiceButton = document.getElementById('voiceReplayBtn');
-    const hanziButton = document.getElementById('hanziQuizBtn');
+    // const voiceButton = document.getElementById('voiceReplayBtn');
+    // const hanziButton = document.getElementById('hanziQuizBtn');
     
     // Complete cleanup
     optionsGrid.innerHTML = '';
     gameState.optionButtons = [];
     gameState.currentOptions = [];
     
-    // Re-add the control buttons after cleanup
-    if (voiceButton) {
-        optionsGrid.appendChild(voiceButton);
-    }
-    if (hanziButton) {
-        optionsGrid.appendChild(hanziButton);
-    }
+
     
     // Ensure we have words to work with
     if (gameState.currentWords.length === 0 && gameState.selectedWords.length > 0) {
@@ -2997,8 +2991,8 @@ async function returnToMenu() {
         const optionsGrid = document.getElementById('optionsGrid');
         if (optionsGrid) {
             // Preserve the control buttons before cleanup
-            const voiceButton = document.getElementById('voiceReplayBtn');
-            const hanziButton = document.getElementById('hanziQuizBtn');
+            // const voiceButton = document.getElementById('voiceReplayBtn');
+            // const hanziButton = document.getElementById('hanziQuizBtn');
             
             const buttons = optionsGrid.querySelectorAll('.option-btn');
             buttons.forEach(button => {
@@ -3014,13 +3008,7 @@ async function returnToMenu() {
             });
             optionsGrid.innerHTML = '';
             
-            // Re-add the control buttons after cleanup
-            if (voiceButton) {
-                optionsGrid.appendChild(voiceButton);
-            }
-            if (hanziButton) {
-                optionsGrid.appendChild(hanziButton);
-            }
+
         }
         
         const charactersRow = document.getElementById('charactersRow');
@@ -3080,9 +3068,9 @@ async function returnToMenu() {
     };
     
     // Clear ALL timeouts/intervals more aggressively
-    for (let i = 1; i < 50000; i++) {
-        clearTimeout(i);
-        clearInterval(i);
+    let id = window.setTimeout(function() {}, 0);
+    while (id--) {
+        window.clearTimeout(id);
     }
     
     // Properly remove keyboard listeners
