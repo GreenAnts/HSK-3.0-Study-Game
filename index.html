@@ -2,26 +2,53 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no, viewport-fit=cover, interactive-widget=resizes-content">
+    <meta name="msapplication-tap-highlight" content="no">
     <meta name="referrer" content="no-referrer">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="apple-mobile-web-app-title" content="HSK Chinese Game">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-color" content="#797d62">
+    <link rel="manifest" href="manifest.json">
     <title>HSK 3.0 Chinese Vocabulary Game</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.3/css/all.min.css">
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Google Fonts for typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <!-- Keep UI fonts (Inter, Poppins) and include only required Hanzi families -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Poppins:wght@300;400;500;600;700&family=Noto+Sans+SC:wght@300;400;500;600;700;900&family=Noto+Sans+TC:wght@300;400;500;600;700;900&family=Noto+Serif+TC:wght@300;400;500;600;700&family=Ma+Shan+Zheng&family=LXGW+WenKai+Mono+TC:wght@400;500;700&family=Long+Cang&display=swap" rel="stylesheet">
+    <!-- Protest Revolution Font - Separate Link -->
+    <link href="https://fonts.googleapis.com/css2?family=Protest+Revolution&display=swap" rel="stylesheet">
+    <!-- Fonts -->
+    <link rel="stylesheet" href="fonts/fonts.css">
     <!-- Styles -->
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
+    <!-- Native Loading Overlay -->
+    <div class="app-loading-overlay" id="appLoadingOverlay">
+        <div class="loading-logo">
+            <img src="icon.png" alt="HSK 3.0 Icon" />
+        </div>
+        <div class="loading-text">
+            Loading your Chinese learning adventure...
+        </div>
+    </div>
+
+    <!-- App Content - Hidden until loading complete -->
+    <div class="app-content" id="appContent">
     <!-- Landing Page -->
     <div class="landing-page" id="landingPage">
-        <!-- Floating Settings Button -->
-        <div class="landing-header">
-            <button class="vintage-settings-btn" onclick="openSettings()">
-                <i class="fas fa-cog"></i>
-            </button>
-        </div>
-        
-        <h1>HSK 3.0 Chinese Vocabulary</h1>
+        <h1>HSK 3.0<br>Vocabulary Study Game</h1>
         <div class="selection-container">
+            <!-- Settings Button positioned in top right of container -->
+            <div class="selection-header">
+                <button class="vintage-settings-btn" onclick="openSettings()">
+                    <i class="fas fa-cog"></i>
+                </button>
+            </div>
             <!-- Band Selection Section -->
             <div class="config-section band-section">
                 <h3>📚 Select HSK Band</h3>
@@ -39,17 +66,19 @@
                 <h3>🎯 Select Word Range</h3>
                 <div class="slider-container">
                     <div class="range-input-container">
-                        <div class="range-input-group">
-                            <label>From:</label>
-                            <input type="number" id="startInput" class="range-input" min="1" max="50" value="1" onchange="updateRange()" oninput="updateRange()">
+                        <!-- Labels row -->
+                        <div class="range-labels-row">
+                            <div class="range-label-item">From:</div>
+                            <div class="range-label-spacer"></div>
+                            <div class="range-label-item">To:</div>
+                            <div class="range-label-spacer"></div>
+                            <div class="range-label-item">Quick:</div>
                         </div>
-                        <span class="range-separator">—</span>
-                        <div class="range-input-group">
-                            <label>To:</label>
-                            <input type="number" id="endInput" class="range-input" min="1" max="50" value="50" onchange="updateRange()" oninput="updateRange()">
-                        </div>
-                        <div class="range-input-group">
-                            <label>Quick:</label>
+                        <!-- Inputs row -->
+                        <div class="range-inputs-row">
+                            <input type="number" id="startInput" class="range-input" min="1" max="50" value="1" onchange="updateRange()" onblur="updateRange()">
+                            <span class="range-separator">—</span>
+                            <input type="number" id="endInput" class="range-input" min="1" max="50" value="50" onchange="updateRange()" onblur="updateRange()">
                             <button class="all-words-btn" onclick="selectAllWords()">All</button>
                         </div>
                     </div>
@@ -67,20 +96,18 @@
             <!-- Game Options Section -->
             <div class="config-section options-section">
                 <h3>⚙️ Game Options</h3>
-                <div class="game-options-grid">
+                <div class="game-options-vertical">
                     <div class="option-item">
                         <div class="checkbox-container">
                             <div class="custom-checkbox" id="randomizeCheckbox" onclick="toggleRandomize()"></div>
                             <label for="randomizeCheckbox" onclick="toggleRandomize()">Randomize word order</label>
                         </div>
                     </div>
-                    
-                    <div class="option-divider"></div>
-                    
+
                     <div class="option-item">
                         <div class="tier-select">
                             <label>Correct answers per tier:</label>
-                            <select class="tier-dropdown" id="landingTierRequirement">
+                            <select class="tier-dropdown" id="landingTierRequirement" onchange="updateTierRequirement()">
                                 <option value="1">1</option>
                                 <option value="2">2</option>
                                 <option value="3" selected>3</option>
@@ -109,10 +136,9 @@
 
             <!-- Start Game Section -->
             <div class="config-section controls-section">
-                <h3>🚀 Start Game</h3>
                 <div class="landing-buttons-container">
-                    <button class="start-button" id="resumeButton" onclick="resumeGame()" style="display: none; background: linear-gradient(45deg, var(--sunglow), var(--persian-orange));">Resume Game</button>
-                    <button class="start-button" onclick="startGame()">Start Game</button>
+                    <button class="start-button" id="resumeButton" onclick="resumeGame()" style="display: none; background: linear-gradient(45deg, var(--sunglow), var(--persian-orange));">Resume</button>
+                    <button class="start-button" onclick="startGame()">Start</button>
                 </div>
             </div>
         </div>
@@ -120,29 +146,18 @@
     <!-- Game Page -->
     <div class="game-page" id="gamePage">
         <div class="score-bar">
-            <!-- Desktop menu controls - hidden on mobile -->
-            <div class="menu-controls">
-                <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
-                <button class="menu-btn" onclick="openSettings()">⚙️ Settings</button>
-            </div>
+            <!-- Left: single Menu button (mirror of settings placement) -->
+            <button class="vintage-settings-btn menu-left-btn" onclick="returnToMenu()" aria-label="Menu">← Menu</button>
 
-            <!-- Mobile menu toggle -->
-            <button class="mobile-menu-toggle" onclick="toggleMobileMenu()">☰</button>
+            <!-- Right: settings cog (icon-only, no background) -->
+            <button class="vintage-settings-btn settings-cog-btn" onclick="openSettings()" aria-label="Settings">
+                <i class="fas fa-cog"></i>
+            </button>
 
             <!-- Stars counter (truly centered now) -->
             <div class="stars-counter">
                 <span class="star-icon" id="starIcon">⭐</span>
                 <span id="starsCount">0</span> / <span id="totalStarsCount">0</span>
-            </div>
-
-            <!-- Mobile collapsible menu -->
-            <div class="mobile-menu" id="mobileMenu">
-                <div class="mobile-menu-content">
-                    <div class="mobile-menu-row">
-                        <button class="menu-btn exit" onclick="returnToMenu()">← Menu</button>
-                        <button class="menu-btn" onclick="openSettings()">⚙️ Settings</button>
-                    </div>
-                </div>
             </div>
         </div>
         
@@ -158,6 +173,10 @@
                 <!-- Voice replay button positioned within grid -->
                 <button class="voice-replay-btn" id="voiceReplayBtn" onclick="replayActiveCharacterAudio()" title="Play pronunciation again">
                     <i class="fas fa-volume-up"></i>
+                </button>
+                <!-- Hanzi quiz button positioned to the left of voice button -->
+                <button class="hanzi-quiz-btn" id="hanziQuizBtn" onclick="openHanziQuiz()" title="Practice writing this character">
+                    <i class="fas fa-pen"></i>
                 </button>
             </div>
         </div>
@@ -213,6 +232,15 @@
                             <span class="volume-label" id="ttsVolumeText">80%</span>
                         </div>
                     </div>
+                    
+                    <!-- TTS Debug Button (Hidden for production, available for debugging) -->
+                    <!-- 
+                    <div class="settings-row" id="ttsDebugButton">
+                        <button onclick="window.testTTSSettings()" style="width: 100%; padding: 8px; background: #4CAF50; color: white; border: none; border-radius: 4px; margin-top: 8px;">
+                            🔧 Test TTS Settings Opening
+                        </button>
+                    </div>
+                    -->
                 </div>
                 
                 <!-- Gameplay Settings Section -->
@@ -221,8 +249,14 @@
                     
                     <div class="settings-row">
                         <div class="toggle-container">
-                            <span class="toggle-label">Easy Mode</span>
+                            <span class="toggle-label">Prevent Tier Losses</span>
                             <div class="toggle-switch" id="easyModeToggleSettings" onclick="toggleEasyMode()">
+                                <div class="toggle-slider"></div>
+                            </div>
+                        </div>
+                        <div class="toggle-container">
+                            <span class="toggle-label">Writing Practice Prompted</span>
+                            <div class="toggle-switch active" id="writingRequiredToggle" onclick="toggleWritingRequired()">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
@@ -246,20 +280,29 @@
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
-                    </div>
-                    
-                    <div class="settings-row">
                         <div class="toggle-container" id="pinyinModeContainer">
-                            <span class="toggle-label">Pinyin Mode</span>
+                            <span class="toggle-label">Pinyin Answers</span>
                             <div class="toggle-switch" id="pinyinModeToggle" onclick="togglePinyinMode()">
                                 <div class="toggle-slider"></div>
                             </div>
                         </div>
                     </div>
+                    
+                    <div class="settings-row">
+                        <div class="dropdown-container">
+                            <span class="dropdown-label">汉字字体 (Hanzi Font)</span>
+                <select id="hanziFontSelect" class="font-dropdown" onchange="changeHanziFont()" oninput="updateFontPreview()">
+                    <option value="">Loading fonts...</option>
+                </select>
+                            <div class="font-preview-container">
+                                <div id="fontPreview" class="font-preview-text">让我们一起快乐地学习中文！</div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
 
-                <!-- Hotkeys Section with Improved Layout -->
-                <div class="settings-section">
+                <!-- Hotkeys Section - Hidden on Mobile -->
+                <div class="settings-section hotkeys-section" id="hotkeysSection">
                     <h3>⌨️ Hotkeys Configuration</h3>
                     
                     <div class="hotkeys-layout">
@@ -284,6 +327,26 @@
 
             </div>
             <button class="close-btn" onclick="closeSettings()">Save & Close</button>
+        </div>
+    </div>
+    
+    <!-- Hanzi Quiz Modal -->
+    <div id="hanziQuizModal" class="hanzi-quiz-modal">
+        <div class="hanzi-quiz-content">
+            <button class="hanzi-close-btn" onclick="closeHanziQuiz()">×</button>
+            <div class="hanzi-quiz-header">
+                <h2>Character Writing Practice</h2>
+                <div class="hanzi-quiz-character" id="hanziQuizCharacter">
+                    <!-- Character info will be populated here -->
+                </div>
+            </div>
+            <div class="hanzi-writing-area" id="hanziWritingArea">
+                <!-- HanziWriter canvas will be created here -->
+            </div>
+            <div class="hanzi-quiz-controls">
+                <button class="hanzi-control-btn" id="characterToggleBtn" onclick="toggleCharacterDisplay()">Show Outline</button>
+                <button class="hanzi-control-btn" onclick="restartHanziQuiz()">Restart</button>
+            </div>
         </div>
     </div>
     
@@ -338,7 +401,13 @@
     <script src="wordlists/band-1-words.js"></script>
     <script src="wordlists/band-2-words.js"></script>
     <script src="wordlists/band-3-words.js"></script>
+    <!-- Hanzi Writer for character writing quizzes -->
+    <script src="hanzi-writer.min.js"></script>
+    <!-- Font Loader -->
+    <script src="fonts/font-loader.js"></script>
+    
     <!-- Scripts -->
+    <script src="tts-module.js"></script>
     <script src="scripts.js"></script>
 </body>
 </html>

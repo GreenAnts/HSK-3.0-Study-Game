@@ -8,6 +8,27 @@
     --beaver: #997b66ff;
 }
 
+/* Chinese Font Support - Load from Google Fonts */
+@font-face {
+    font-family: 'Noto Sans SC';
+    font-style: normal;
+    font-weight: 400;
+    font-display: swap;
+    src: local('Noto Sans SC'), local('NotoSansSC-Regular'),
+         url('https://fonts.gstatic.com/s/notosanssc/v26/k3kXo84MPvpLmixcA63oeALhL4iJ-Q7m8g.woff2') format('woff2');
+    unicode-range: U+4E00-9FFF, U+3400-4DBF, U+20000-2A6DF, U+2A700-2B73F, U+2B740-2B81F, U+2B820-2CEAF, U+F900-FAFF, U+2F800-2FA1F;
+}
+
+@font-face {
+    font-family: 'Noto Sans SC';
+    font-style: normal;
+    font-weight: 700;
+    font-display: swap;
+    src: local('Noto Sans SC Bold'), local('NotoSansSC-Bold'),
+         url('https://fonts.gstatic.com/s/notosanssc/v26/k3kQo84MPvpLmixcA63oeALZlYKwRxI-pQ.woff2') format('woff2');
+    unicode-range: U+4E00-9FFF, U+3400-4DBF, U+20000-2A6DF, U+2A700-2B73F, U+2B740-2B81F, U+2B820-2CEAF, U+F900-FAFF, U+2F800-2FA1F;
+}
+
 * {
     margin: 0;
     padding: 0;
@@ -15,12 +36,24 @@
 }
 
 body {
-    font-family: 'Arial', sans-serif;
+    font-family: 'Inter', 'Poppins', 'Roboto', 'Arial', sans-serif;
     background: linear-gradient(135deg, var(--reseda-green), var(--moss-green));
     min-height: 100vh;
     display: flex;
     flex-direction: column;
     cursor: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 20 20"><circle cx="10" cy="10" r="5" fill="rgba(241,220,167,0.8)" stroke="rgba(121,125,98,0.8)" stroke-width="2"/></svg>') 10 10, auto;
+    /* Edge-to-edge display with Capacitor safe area handling */
+    padding: 0;
+    margin: 0;
+    /* Ensure body extends to edges */
+    padding-top: env(safe-area-inset-top);
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+    /* Better font rendering */
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
 }
 
 /* Click Effect Sprite Animation */
@@ -39,9 +72,50 @@ body {
     100% { opacity: 0; transform: scale(1); }
 }
 
+/* Native Loading Overlay - covers everything until app is ready */
+.app-loading-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background: linear-gradient(135deg, var(--reseda-green), var(--moss-green));
+    z-index: 10000;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+}
+
+.app-loading-overlay .loading-logo {
+    width: 180px;
+    height: 180px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 2rem;
+}
+
+.app-loading-overlay .loading-logo img {
+    width: 180px;
+    height: 180px;
+    object-fit: contain;
+}
+
+.app-loading-overlay .loading-text {
+    color: var(--peach-yellow);
+    font-size: 1.2rem;
+    text-align: center;
+}
+
+/* Hide all app content initially */
+.app-content {
+    display: none;
+}
+
 /* Landing Page Styles */
 .landing-page {
-    display: flex;
+    display: none;
     flex-direction: column;
     align-items: center;
     justify-content: center;
@@ -52,10 +126,12 @@ body {
 }
 
 .landing-page h1 {
-    font-size: 3rem;
-    margin-bottom: 2rem;
+    font-size: 2.2rem;
+    margin-bottom: 1.5rem;
     text-shadow: 2px 2px 4px rgba(0,0,0,0.5);
     color: var(--peach-yellow);
+    line-height: 1.2;
+    font-family: 'Protest Revolution', 'Inter', 'Poppins', 'Roboto', 'Arial', sans-serif !important;
 }
 
 .selection-container {
@@ -67,10 +143,11 @@ body {
     border: 1px solid rgba(255,255,255,0.18);
     margin-bottom: 20px;
     overflow: hidden;
+    position: relative;
 }
 
 .config-section {
-    padding: 25px 30px;
+    padding: 20px 30px;
     border-bottom: 1px solid rgba(255,255,255,0.2);
 }
 
@@ -100,6 +177,7 @@ body {
 
 .config-section.controls-section {
     background: linear-gradient(45deg, rgba(153,123,102,0.1), rgba(121,125,98,0.1));
+    padding: 15px 30px;
 }
 
 /* Landing Page Form Controls */
@@ -127,6 +205,9 @@ body {
     text-transform: none ;
     margin: 0 ;
     box-sizing: border-box ;
+    display: flex ;
+    align-items: center ;
+    justify-content: center ;
 }
 
 .all-words-btn:focus {
@@ -165,10 +246,10 @@ body {
     z-index: 100;
 }
 
-.landing-header {
+.selection-header {
     position: absolute;
-    top: 20px;
-    right: 20px;
+    top: 15px;
+    right: 15px;
     z-index: 1000;
 }
 
@@ -223,26 +304,38 @@ body {
 }
 
 .range-input-container {
-    display: flex;
-    align-items: center;
-    gap: 15px;
     margin: 20px 0;
-    justify-content: center;
-    flex-wrap: wrap;
 }
 
-.range-input-group {
+.range-labels-row {
     display: flex;
-    flex-direction: column;
     align-items: center;
-    gap: 5px;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: nowrap;
+    margin-bottom: 5px;
 }
 
-.range-input-group label {
+.range-labels-row .range-label-item {
+    width: 80px;
+    text-align: center;
     font-size: 0.9rem;
     color: var(--peach-yellow);
-    margin-bottom: 0;
+    font-weight: 500;
 }
+
+.range-labels-row .range-label-spacer {
+    width: 10px;
+}
+
+.range-inputs-row {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    justify-content: center;
+    flex-wrap: nowrap;
+}
+
 
 .range-input {
     background: rgba(255,255,255,0.2);
@@ -270,6 +363,8 @@ body {
     font-size: 1.2rem;
     color: var(--peach-yellow);
     font-weight: bold;
+    align-self: center;
+    line-height: 1;
 }
 
 .range-values {
@@ -343,19 +438,17 @@ body {
     color: white;
 }
 
-.game-options-grid {
-    display: grid;
-    grid-template-columns: 1fr auto 1fr;
+.game-options-vertical {
+    display: flex;
+    flex-direction: column;
     gap: 20px;
-    align-items: center;
     width: 100%;
 }
 
-.option-divider {
-    width: 2px;
-    height: 60px;
-    background: linear-gradient(180deg, transparent, rgba(255,255,255,0.3), transparent);
-    border-radius: 2px;
+.option-item {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 .tier-select {
@@ -373,12 +466,17 @@ body {
 .custom-checkbox {
     width: 20px;
     height: 20px;
+    min-width: 20px;
+    min-height: 20px;
+    max-width: 20px;
+    max-height: 20px;
     border: 2px solid rgba(255,255,255,0.3);
-    border-radius: 4px;
+    border-radius: 2px;
     background: rgba(255,255,255,0.2);
     cursor: pointer;
     position: relative;
     transition: all 0.3s ease;
+    flex-shrink: 0;
 }
 
 .custom-checkbox.checked {
@@ -397,6 +495,14 @@ body {
     font-size: 14px;
 }
 
+.landing-buttons-container {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
 .start-button {
     background: linear-gradient(45deg, var(--persian-orange), var(--beaver));
     color: white;
@@ -408,6 +514,9 @@ body {
     margin: 10px;
     transition: all 0.3s ease;
     box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    flex: 1;
+    min-width: 200px;
+    max-width: 300px;
 }
 
 .start-button:hover {
@@ -429,7 +538,7 @@ body {
 .score-bar {
     background: linear-gradient(90deg, var(--reseda-green), var(--beaver));
     color: white;
-    padding: 15px;
+    padding: 20px;
     text-align: center;
     font-size: 1.5rem;
     display: flex;
@@ -437,24 +546,35 @@ body {
     align-items: center;
     position: relative;
     box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+    /* Edge-to-edge with Capacitor safe area handling */
+    padding-top: max(25px, calc(15px + env(safe-area-inset-top)));
+    padding-bottom: 25px;
+    /* Ensure minimum height for content - increased for better spacing */
+    min-height: max(80px, calc(65px + env(safe-area-inset-top)));
+    z-index: 1000; /* Higher z-index to ensure mobile menu appears above characters-row */
+    /* Extend to very top of screen */
+    margin-top: calc(-1 * env(safe-area-inset-top));
+}
+
+/* Settings cog button - icon only, larger, positioned with safe-area awareness */
+.settings-cog-btn {
+    position: absolute;
+    right: 15px;
+    top: max(65%, calc(50% + env(safe-area-inset-top, 24px) + 18px));
 }
 
 /* Menu controls positioned absolutely to not affect centering */
-.menu-controls {
+/* Menu button mirrors settings cog placement on the left */
+.menu-left-btn {
     position: absolute;
     left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
-    display: flex;
-    gap: 10px;
-    align-items: center;
+    top: max(65%, calc(50% + env(safe-area-inset-top, 24px) + 18px));
 }
 
 .mobile-menu-toggle {
     position: absolute;
     left: 15px;
-    top: 50%;
-    transform: translateY(-50%);
+    top: max(60%, calc(50% + var(--safe-area-inset-top, 24px) + 15px));
     display: none;
     background: rgba(255,255,255,0.2);
     color: white;
@@ -463,6 +583,10 @@ body {
     border-radius: 8px;
     cursor: pointer;
     font-size: 1.2rem;
+    z-index: 1002;
+    pointer-events: auto;
+    /* Proper positioning for mobile devices with SafeArea plugin support and fallback */
+    top: max(60%, calc(50% + var(--safe-area-inset-top, 24px) + 15px));
 }
 
 /* Stars counter - now truly centered */
@@ -485,8 +609,9 @@ body {
     background: rgba(0,0,0,0.95);
     border-radius: 10px;
     padding: 15px;
-    z-index: 1000;
+    z-index: 1001;
     box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    pointer-events: auto;
 }
 
 .mobile-menu.active {
@@ -517,6 +642,9 @@ body {
     font-size: 0.9rem;
     transition: all 0.3s ease;
     border: 1px solid rgba(255,255,255,0.1);
+    pointer-events: auto;
+    z-index: 1003;
+    position: relative;
 }
 
 .menu-btn:hover {
@@ -595,6 +723,97 @@ body {
     align-items: center;
     gap: 8px;
     position: relative;
+}
+
+/* Dropdown Controls */
+.dropdown-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    position: relative;
+    width: 100%;
+}
+
+.dropdown-label {
+    color: var(--peach-yellow);
+    font-size: 0.9rem;
+    font-weight: 500;
+    min-width: 80px;
+    text-align: left;
+}
+
+.font-dropdown {
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    padding: 8px 12px;
+    font-size: 0.9rem;
+    font-family: inherit;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    flex: 1;
+    min-width: 150px;
+}
+
+.font-dropdown:hover {
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.font-dropdown:focus {
+    outline: none;
+    border-color: var(--peach-yellow);
+    box-shadow: 0 0 0 2px rgba(241, 220, 167, 0.3);
+}
+
+.font-dropdown option {
+    background: #2c3e50;
+    color: white;
+    padding: 8px;
+}
+
+.font-preview-container {
+    margin-top: 10px;
+    padding: 12px;
+    background: rgba(255, 255, 255, 0.1);
+    border: 2px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    text-align: center;
+}
+
+.font-preview-text {
+    font-size: 1.2rem;
+    color: white;
+    line-height: 1.4;
+    min-height: 2.8rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: font-family 0.3s ease;
+}
+
+/* Font classes are now defined in fonts/fonts.css */
+
+/* Ensure English text always uses Inter font */
+.english-text,
+.option-btn span:not(.chinese-character):not(.character):not(.word-chinese),
+h1, h2, h3, h4, h5, h6,
+button:not(.chinese-character):not(.character):not(.word-chinese),
+label:not(.chinese-character):not(.character):not(.word-chinese),
+span:not(.chinese-character):not(.character):not(.word-chinese) {
+    font-family: 'Inter', 'Poppins', 'Roboto', 'Arial', sans-serif !important;
+}
+
+/* Pinyin text should always use a specific font for readability */
+.pinyin-text,
+.pinyin,
+[class*="pinyin"],
+.character-pinyin,
+.word-pinyin {
+    font-family: 'Roboto', 'Arial', sans-serif !important;
+    font-weight: 500 !important;
+    letter-spacing: 0.5px !important;
 }
 
 .info-icon {
@@ -704,15 +923,22 @@ body {
 
 .modal-content {
     background: linear-gradient(135deg, var(--reseda-green), var(--moss-green));
-    margin: 3% auto;
+    margin: auto;
     padding: 15px;
     border-radius: 15px;
     width: 90%;
     max-width: 480px; /* Slightly more compact */
     color: white;
     box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    max-height: 85vh;
+    max-height: calc(85vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
     overflow-y: auto;
+    /* Proper centering with Capacitor safe area support */
+    position: relative;
+    top: 50%;
+    transform: translateY(-50%);
+    /* Ensure modal respects safe areas */
+    margin-top: max(env(safe-area-inset-top), 20px);
+    margin-bottom: max(env(safe-area-inset-bottom), 20px);
 }
 
 .settings-grid {
@@ -926,19 +1152,20 @@ body {
 
 /* Enhanced Characters Row with better border */
 .characters-row {
-    height: clamp(200px, 28vh, 320px); /* Increased height for better spacing */
+    height: clamp(260px, 38vh, 420px); /* Increased height for larger characters */
     position: relative;
     overflow: hidden;
     display: flex;
     align-items: center;
     justify-content: center;
     background: linear-gradient(90deg, rgba(217,174,148,0.3), rgba(241,220,167,0.3));
-    padding: clamp(20px, 5vh, 40px) 0; /* Increased vertical padding */
+    padding: clamp(26px, 6vh, 48px) 0; /* Increased vertical padding */
     border-bottom: 4px solid transparent;
     border-image: linear-gradient(90deg, var(--desert-sand), var(--peach-yellow), var(--desert-sand)) 1;
     box-shadow: 
         inset 0 -3px 6px rgba(0,0,0,0.1),
         0 2px 8px rgba(0,0,0,0.15);
+    z-index: 1; /* Lower z-index to not interfere with mobile menu */
 }
 
 .character-container {
@@ -951,9 +1178,10 @@ body {
     border-radius: 15px;
     box-shadow: 0 8px 25px rgba(0,0,0,0.15);
     transition: all 0.5s ease;
-    min-width: 120px;
-    max-width: 200px;
-    height: clamp(120px, 18vh, 180px); /* Responsive container height */
+    min-width: 140px;
+    width: auto; /* Allow dynamic width */
+    max-width: 280px; /* Increase max width for longer characters */
+    height: clamp(180px, 26vh, 260px);
     border: 3px solid transparent;
     padding: clamp(8px, 1.5vh, 12px);
     box-sizing: border-box;
@@ -967,6 +1195,8 @@ body {
     left: 50% ;
     transform: translateX(-50%) scale(1.3);
     background: linear-gradient(145deg, rgba(255,203,105,0.9), rgba(241,220,167,0.95));
+    height: clamp(200px, 30vh, 300px);
+    max-width: 350px; /* Allow more width for active character */
 }
 
 .character-container.next {
@@ -1000,17 +1230,49 @@ body {
 }
 
 .chinese-char {
-    font-size: 2rem;
+    font-size: 3.8rem;
     font-weight: bold;
     color: var(--reseda-green);
     text-align: center;
     word-wrap: break-word;
-    line-height: 1.2;
+    line-height: 1.1;
+    white-space: nowrap; /* Prevent line breaks */
+    overflow: hidden; /* Prevent overflow */
+    text-overflow: ellipsis; /* Handle overflow gracefully */
+    /* Chinese font support with fallbacks */
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', 'STHeiti', 'KaiTi', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
 }
 
 .character-container.active .chinese-char {
-    font-size: 2.5rem;
+    font-size: 4.4rem;
     color: var(--beaver);
+}
+
+/* Dynamic font sizing for longer characters */
+.chinese-char[data-length="3"] {
+    font-size: 3.2rem;
+}
+
+.chinese-char[data-length="4"] {
+    font-size: 2.8rem;
+}
+
+.chinese-char[data-length="5"],
+.chinese-char[data-length="6"] {
+    font-size: 2.4rem;
+}
+
+.character-container.active .chinese-char[data-length="3"] {
+    font-size: 3.6rem;
+}
+
+.character-container.active .chinese-char[data-length="4"] {
+    font-size: 3.2rem;
+}
+
+.character-container.active .chinese-char[data-length="5"],
+.character-container.active .chinese-char[data-length="6"] {
+    font-size: 2.8rem;
 }
 
 /* Options Container */
@@ -1056,13 +1318,23 @@ body {
 }
 
 .option-btn span {
-    font-size: clamp(0.8rem, 2vw, 1.2rem);
+    font-size: clamp(0.8rem, 3vw, 1.2rem);
     text-align: center;
-    line-height: 1.2;
+    line-height: 1.1;
     word-wrap: break-word;
     overflow-wrap: break-word;
     hyphens: auto;
     max-width: 100%;
+    display: -webkit-box;
+    -webkit-line-clamp: 3;
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    /* Better responsive scaling - larger by default, shrink only when needed */
+    font-size: max(0.8rem, min(1.2rem, 3vw));
+    /* Enhanced typography for better readability */
+    font-weight: 500;
+    letter-spacing: 0.02em;
 }
 
 .option-btn:hover {
@@ -1124,6 +1396,35 @@ body {
     font-weight: bold;
 }
 
+/* Hanzi Quiz Checkmark */
+.hanzi-checkmark {
+    position: absolute;
+    right: 8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    transition: all 0.3s ease;
+    z-index: 5;
+    bottom: 2px; /* attach to progress bar area at bottom */
+}
+
+.hanzi-checkmark.completed {
+    background: linear-gradient(145deg, #4CAF50, #45a049);
+    color: white;
+    box-shadow: 0 2px 8px rgba(76, 175, 80, 0.4);
+}
+
+.hanzi-checkmark.incomplete {
+    background: linear-gradient(145deg, #9aa0a6, #80868b); /* solid grey */
+    color: #ffffff;
+    border: none;
+    box-shadow: 0 2px 8px rgba(128, 134, 139, 0.35);
+}
+
 .hotkey {
     position: absolute;
     top: 5px;
@@ -1178,6 +1479,160 @@ body {
 
 .voice-replay-btn:hover i {
     transform: scale(1.1);
+}
+
+/* Hanzi Quiz Button */
+.hanzi-quiz-btn {
+    position: absolute;
+    bottom: 20px;
+    right: 80px; /* Positioned to the left of voice replay button */
+    width: 50px;
+    height: 50px;
+    background: linear-gradient(145deg, var(--reseda-green), var(--beaver));
+    border: 3px solid var(--peach-yellow);
+    border-radius: 50%;
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.hanzi-quiz-btn:hover {
+    transform: translateY(-2px) scale(1.05);
+    box-shadow: 0 6px 20px rgba(121,125,98,0.4);
+    background: linear-gradient(145deg, var(--beaver), var(--reseda-green));
+}
+
+.hanzi-quiz-btn:active {
+    transform: translateY(0) scale(0.95);
+}
+
+.hanzi-quiz-btn i {
+    transition: transform 0.3s ease;
+}
+
+.hanzi-quiz-btn:hover i {
+    transform: scale(1.1);
+}
+
+/* Hanzi Quiz Modal */
+.hanzi-quiz-modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 10000;
+}
+
+.hanzi-quiz-modal.active {
+    display: flex;
+}
+
+.hanzi-quiz-content {
+    background: linear-gradient(135deg, var(--peach-yellow), var(--sunglow));
+    border-radius: 20px;
+    padding: 30px;
+    max-width: 90vw;
+    max-height: 90vh;
+    width: 500px;
+    text-align: center;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+    position: relative;
+}
+
+.hanzi-quiz-header {
+    margin-bottom: 20px;
+}
+
+.hanzi-quiz-header h2 {
+    color: var(--beaver);
+    margin: 0 0 10px 0;
+    font-size: 1.5rem;
+}
+
+.hanzi-quiz-character {
+    font-size: 1.2rem;
+    color: var(--reseda-green);
+    margin-bottom: 20px;
+    /* Chinese font support */
+    font-family: 'Noto Sans SC', 'Microsoft YaHei', 'SimHei', 'STHeiti', 'KaiTi', 'Hiragino Sans GB', 'WenQuanYi Micro Hei', sans-serif;
+}
+
+.hanzi-writing-area {
+    width: 300px;
+    height: 300px;
+    background: white;
+    border: 3px solid var(--beaver);
+    border-radius: 15px;
+    margin: 0 auto 20px auto;
+    position: relative;
+    background-image: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="100" height="100"><line x1="0" y1="0" x2="100" y2="100" stroke="%23DDD" /><line x1="100" y1="0" x2="0" y2="100" stroke="%23DDD" /><line x1="50" y1="0" x2="50" y2="100" stroke="%23DDD" /><line x1="0" y1="50" x2="100" y2="50" stroke="%23DDD" /></svg>');
+    background-size: 100% 100%;
+    background-repeat: no-repeat;
+    touch-action: none;
+    user-select: none;
+}
+
+.hanzi-writing-area svg,
+.hanzi-writing-area canvas {
+    touch-action: none;
+    user-select: none;
+    pointer-events: auto;
+}
+
+.hanzi-quiz-controls {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-top: 20px;
+}
+
+.hanzi-control-btn {
+    padding: 10px 20px;
+    border: none;
+    border-radius: 25px;
+    background: linear-gradient(145deg, var(--beaver), var(--reseda-green));
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.hanzi-control-btn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.2);
+}
+
+.hanzi-close-btn {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    width: 30px;
+    height: 30px;
+    border: none;
+    border-radius: 50%;
+    background: rgba(0, 0, 0, 0.2);
+    color: white;
+    font-size: 1.2rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.3s ease;
+}
+
+.hanzi-close-btn:hover {
+    background: rgba(0, 0, 0, 0.4);
 }
 
 /* Game Animations */
@@ -1273,11 +1728,21 @@ body {
 .tier-up { animation: tierUp 0.8s ease; }
 .star-shoot { animation: starShoot 1.2s ease; }
 
+/* Hide hotkeys section on mobile devices */
+@media (max-width: 768px) {
+    .hotkeys-section {
+        display: none !important;
+    }
+}
+
 /* Responsive Mobile Styles - Enhanced for Pixel 7a */
 @media (max-width: 768px) {
     .score-bar {
         font-size: 1.2rem;
-        padding: 10px;
+        padding: 15px;
+        padding-top: max(20px, calc(10px + env(safe-area-inset-top)));
+        padding-bottom: 20px;
+        min-height: max(70px, calc(55px + env(safe-area-inset-top)));
     }
 
     .menu-controls { display: none; }
@@ -1287,8 +1752,8 @@ body {
     .star-icon { font-size: 1.3rem; }
 
     .characters-row {
-        height: clamp(180px, 25vh, 240px); /* Increased mobile height for better spacing */
-        padding: clamp(15px, 4vh, 25px) 10px; /* Increased mobile vertical padding */
+        height: clamp(210px, 32vh, 300px);
+        padding: clamp(18px, 4.5vh, 28px) 10px;
     }
 
     .mascot-icon {
@@ -1297,15 +1762,18 @@ body {
     }
 
     .character-container {
-        min-width: 90px;
-        max-width: 130px;
-        height: clamp(90px, 15vh, 130px); /* Responsive mobile container height */
-        padding: clamp(6px, 1.2vh, 10px);
+        min-width: 120px;
+        width: auto;
+        max-width: 220px; /* Increase for longer characters */
+        height: clamp(140px, 20vh, 200px);
+        padding: clamp(8px, 1.4vh, 12px);
     }
 
     .character-container.active {
-        transform: translateX(-50%) scale(1.1);
+        transform: translateX(-50%) scale(1.2);
         z-index: 100;
+        height: clamp(160px, 24vh, 240px);
+        max-width: 280px; /* Allow more width for active character on mobile */
     }
 
     .character-container.next {
@@ -1321,8 +1789,19 @@ body {
     }
 
     .pinyin { font-size: 0.8rem; }
-    .chinese-char { font-size: 1.5rem; }
-    .character-container.active .chinese-char { font-size: 1.8rem; }
+    .chinese-char { font-size: 2.8rem; }
+    .character-container.active .chinese-char { font-size: 3.2rem; }
+    
+    /* Mobile dynamic font sizing for longer characters */
+    .chinese-char[data-length="3"] { font-size: 2.4rem; }
+    .chinese-char[data-length="4"] { font-size: 2.0rem; }
+    .chinese-char[data-length="5"],
+    .chinese-char[data-length="6"] { font-size: 1.8rem; }
+    
+    .character-container.active .chinese-char[data-length="3"] { font-size: 2.8rem; }
+    .character-container.active .chinese-char[data-length="4"] { font-size: 2.4rem; }
+    .character-container.active .chinese-char[data-length="5"],
+    .character-container.active .chinese-char[data-length="6"] { font-size: 2.2rem; }
 
     /* Enhanced mobile options grid for better spacing */
     .options-grid {
@@ -1340,8 +1819,18 @@ body {
     }
 
     .option-btn span {
-        font-size: clamp(0.75rem, 1.8vw, 1rem);
-        line-height: 1.1;
+        font-size: clamp(0.7rem, 2.5vw, 1rem);
+        line-height: 1.0;
+        display: -webkit-box;
+        -webkit-line-clamp: 2;
+        -webkit-box-orient: vertical;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        /* Better mobile responsive scaling - larger by default */
+        font-size: max(0.7rem, min(1rem, 2.5vw));
+        /* Enhanced typography for mobile readability */
+        font-weight: 500;
+        letter-spacing: 0.01em;
     }
     
     /* Landing page mobile adjustments */
@@ -1353,6 +1842,7 @@ body {
     .landing-page h1 {
         font-size: 2rem;
         margin-bottom: 1.5rem;
+        font-family: 'Protest Revolution', 'Inter', 'Poppins', 'Roboto', 'Arial', sans-serif !important;
     }
 
     .selection-container {
@@ -1362,7 +1852,7 @@ body {
         max-width: 90vw;
     }
 
-    .range-input-container { gap: 10px; }
+    .range-inputs-row { gap: 10px; }
     .range-input { width: 70px; padding: 6px 8px; font-size: 0.9rem; }
     .slider-container { margin: 15px 0; }
     .slider-container label { font-size: 1rem; margin-bottom: 8px; }
@@ -1371,19 +1861,130 @@ body {
     .tier-select label { font-size: 1rem; }
     .tier-dropdown { padding: 6px 10px; font-size: 0.9rem; width: 100%; max-width: 200px; }
 
+    .landing-buttons-container {
+        flex-direction: row;
+        gap: 8px;
+        justify-content: center;
+        align-items: center;
+    }
+    
     .start-button {
-        padding: 12px 25px;
-        font-size: 1rem;
-        margin: 8px;
-        width: calc(100% - 16px);
-        max-width: 300px;
+        padding: 12px 16px;
+        font-size: 0.9rem;
+        margin: 8px 4px;
+        flex: 1;
+        min-width: 100px;
+        max-width: 140px;
     }
 
     .modal-content {
         width: 95%;
         max-width: none;
-        margin: 5% auto;
-        padding: 20px;
+        margin: auto;
+        padding: 15px;
+        max-height: calc(90vh - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+        /* Better mobile positioning with Capacitor safe area support */
+        top: 50%;
+        transform: translateY(-50%);
+        /* Ensure proper spacing on mobile */
+        margin-top: max(env(safe-area-inset-top), 10px);
+        margin-bottom: max(env(safe-area-inset-bottom), 10px);
+    }
+    
+    /* Mobile settings grid optimization */
+    .settings-grid {
+        gap: 8px;
+    }
+    
+    .settings-section {
+        padding: 12px;
+        margin-bottom: 8px;
+    }
+    
+    .settings-section h3 {
+        font-size: 1.1rem;
+        margin-bottom: 10px;
+    }
+    
+    .settings-row {
+        margin: 8px 0;
+        gap: 10px;
+    }
+    
+    /* Better mobile toggle layout */
+    .toggle-container {
+        flex-direction: row;
+        justify-content: space-between;
+        align-items: center;
+        width: 100%;
+    }
+    
+    .dropdown-container {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 6px;
+        width: 100%;
+    }
+    
+    .dropdown-label {
+        font-size: 0.85rem;
+        min-width: auto;
+        text-align: center;
+    }
+    
+    .font-dropdown {
+        min-width: auto;
+        font-size: 0.85rem;
+        padding: 10px 12px;
+    }
+    
+    .toggle-label {
+        font-size: 0.9rem;
+        flex: 1;
+    }
+    
+    .toggle-switch {
+        width: 45px;
+        height: 22px;
+        flex-shrink: 0;
+    }
+    
+    .toggle-slider {
+        width: 18px;
+        height: 18px;
+        top: 2px;
+        left: 2px;
+    }
+    
+    .toggle-switch.active .toggle-slider {
+        transform: translateX(23px);
+    }
+    
+    /* Mobile volume controls */
+    .volume-container {
+        flex-direction: row;
+        align-items: center;
+        gap: 10px;
+        margin-top: 5px;
+    }
+    
+    .volume-slider {
+        flex: 1;
+        min-width: 100px;
+    }
+    
+    .volume-label {
+        font-size: 0.8rem;
+        min-width: 35px;
+    }
+    
+    /* Mobile close button */
+    .close-btn {
+        width: 100%;
+        padding: 12px 20px;
+        font-size: 1rem;
+        margin: 20px auto 0;
+        border-radius: 10px;
     }
 
     .hotkey-setting {
@@ -1406,9 +2007,9 @@ body {
 
     /* Mobile adjustments */
     @media (max-width: 768px) {
-        .landing-header {
-            top: 15px;
-            right: 15px;
+        .selection-header {
+            top: 10px;
+            right: 10px;
         }
         
         .vintage-settings-btn {
@@ -1420,7 +2021,7 @@ body {
     /* Mobile adjustments for floating button */
     @media (max-width: 768px) {
         .floating-settings-btn {
-            top: 15px;
+            top: max(35px, calc(15px + var(--safe-area-inset-top, 24px)));
             right: 15px;
             width: 45px;
             height: 45px;
@@ -1444,6 +2045,15 @@ body {
         height: 45px;
         bottom: 15px;
         right: 15px;
+        font-size: 1.1rem;
+    }
+    
+    /* Mobile hanzi quiz button */
+    .hanzi-quiz-btn {
+        width: 45px;
+        height: 45px;
+        bottom: 15px;
+        right: 70px;
         font-size: 1.1rem;
     }
 }

@@ -3,7 +3,8 @@ let gameSettings = {
     music: { enabled: false, volume: 0.15 },
     sfx: { enabled: true, volume: 0.7 },
     tts: { enabled: true, volume: 0.8 }, // ADD this line
-    ui: { showPinyin: true, pinyinMode: false, easyMode: false, traditional: false },
+    ui: { showPinyin: true, pinyinMode: false, easyMode: false, traditional: false, hanziFont: 'kaiti', writingRequired: true, randomize: false, band: 1, rangeStart: 1, rangeEnd: 50, tierRequirement: 3 },
+    app: { currentPage: 'landing', hasPlayedBefore: false },
     mascot: { lastInteraction: Date.now(), idleTimeout: 5000 }
 };
 
@@ -36,6 +37,7 @@ let gameState = {
     selectedWords: [], currentWords: [], activeWordIndex: 0, wordProgress: {},
     starsEarned: 0, completedWords: 0, charactersOnScreen: [], optionButtons: [],
     currentOptions: [], hotkeys: ['7', '8', '9', '4', '5', '6', '1', '2', '3', '0'],
+    nextWordIndex: 0,
     audioHotkey: ' ', // Spacebar for audio pronunciation
     streakCount: 0, lastAnswerTime: 0, alreadyPenalized: false, easyMode: false,
     tierRequirement: 5,
@@ -79,15 +81,20 @@ function loadHSKWords(band = 1) {
     try {
         if (hskBands[band] && hskBands[band].length > 0) {
             hskWords = hskBands[band];
-            console.log(`Loaded ${hskWords.length} words from HSK Band ${band}`);
+            // HSK words loaded
             
             // Note: allWordsButton was removed - all buttons now say "Start Game"
             
             const maxWords = hskWords.length;
             document.getElementById('startInput').max = maxWords;
             document.getElementById('endInput').max = maxWords;
-            document.getElementById('endInput').value = Math.min(50, maxWords);
-            updateRange();
+            
+            // Only set default value if no saved value exists
+            const endInput = document.getElementById('endInput');
+            if (!endInput.value || endInput.value === '50') {
+                endInput.value = Math.min(50, maxWords);
+            }
+            updateRange(false);
             
             return true;
         } else {
@@ -96,7 +103,7 @@ function loadHSKWords(band = 1) {
     } catch (error) {
         console.error('Failed to load HSK words:', error);
         hskWords = hskBands[1] || [];
-        console.log('Using fallback wordlist');
+        // Using fallback wordlist
         return false;
     }
 }
@@ -106,30 +113,463 @@ function getChineseChar(word) {
     return useTraditional && word.traditional ? word.traditional : word.chinese;
 }
 
-// Enhanced TTS with better mobile support and fallbacks
+// Helper function to create Chinese character element with dynamic sizing
+function createChineseCharElement(word) {
+    const chineseText = getChineseChar(word);
+    const length = chineseText.length;
+    return `<div class="chinese-char" data-length="${length}">${chineseText}</div>`;
+}
+
+// Toggle randomize word order function - defined early to avoid reference errors
+function toggleRandomize() {
+    randomizeWords = !randomizeWords;
+    const checkbox = document.getElementById('randomizeCheckbox');
+    
+    if (checkbox) {
+        if (randomizeWords) {
+            checkbox.classList.add('checked');
+        } else {
+            checkbox.classList.remove('checked');
+        }
+    }
+
+    // Persist setting
+    gameSettings.ui.randomize = randomizeWords;
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
+}
+
+// Page state management
+function savePageState(pageName) {
+    gameSettings.app.currentPage = pageName;
+    gameSettings.app.hasPlayedBefore = true;
+    
+    // Save settings immediately
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
+    console.log('Page state saved:', pageName);
+}
+
+function getCurrentPage() {
+    return gameSettings.app.currentPage || 'landing';
+}
+
+function hasPlayedBefore() {
+    return gameSettings.app.hasPlayedBefore || false;
+}
+
+async function restoreLastPage() {
+    const currentPage = getCurrentPage();
+    console.log('Restoring last page:', currentPage, 'hasPlayedBefore:', hasPlayedBefore());
+    
+    // If this is the first time opening the app, stay on landing page
+    if (!hasPlayedBefore()) {
+        console.log('First time user, staying on landing page');
+        return;
+    }
+    
+    // If user was on the game page, try to resume
+    if (currentPage === 'game') {
+        // Check if there's a saved game state to resume
+        const savedState = await loadSavedGameState();
+        if (savedState && savedState.selectedWords && savedState.selectedWords.length > 0) {
+            console.log('Restoring game from saved state');
+            // Automatically resume the game
+            await resumeGame();
+        } else {
+            console.log('No game state to resume, staying on landing page');
+            // No saved game, user was probably on game page but finished
+            savePageState('landing');
+        }
+    }
+    // If currentPage is 'landing' or any other page, we're already there by default
+}
+
+// Complete app initialization behind native loading overlay
+async function initializeAppCompletely() {
+    console.log('=== Starting Complete App Initialization ===');
+    
+    try {
+        // Step 1: Load saved game state to determine what to show
+        console.log('Step 1: Loading saved game state...');
+        await checkForSavedGame();
+        
+        const currentPage = getCurrentPage();
+        const hasPlayed = hasPlayedBefore();
+        let targetPage = 'landing';
+        let shouldResumeGame = false;
+        
+        console.log('Current page:', currentPage, 'hasPlayedBefore:', hasPlayed);
+        
+        // Step 2: Determine target page  
+        if (!hasPlayed) {
+            console.log('First time user - will show landing page');
+            targetPage = 'landing';
+        } else if (currentPage === 'game') {
+            const savedState = await loadSavedGameState();
+            if (savedState && savedState.selectedWords && savedState.selectedWords.length > 0) {
+                console.log('Has saved game - will resume game');
+                targetPage = 'game';
+                shouldResumeGame = true;
+            } else {
+                console.log('No saved game - will show landing page');
+                targetPage = 'landing';
+                savePageState('landing');
+            }
+        } else {
+            console.log('Default - will show landing page');
+            targetPage = 'landing';
+        }
+        
+        // Step 3: Prepare the target page completely
+        if (shouldResumeGame) {
+            console.log('Step 3: Preparing game resume completely...');
+            await prepareCompleteGameResume();
+        } else {
+            console.log('Step 3: Preparing landing page...');
+            // Landing page is ready by default
+        }
+        
+        // Step 4: Show the correct page  
+        console.log('Step 4: Revealing app with target page:', targetPage);
+        if (targetPage === 'game') {
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('gamePage').style.display = 'flex';
+            
+            // NOW position the mascot after the page is visible
+            requestAnimationFrame(() => {
+                requestAnimationFrame(() => {
+                    if (gameState.charactersOnScreen.length > 0) {
+                        console.log('Repositioning characters and mascot after game page shown');
+                        positionCharacterContainers();
+                    }
+                });
+            });
+            
+            // Start background music if enabled
+            if (gameSettings.music.enabled) {
+                const bgMusic = document.getElementById('backgroundMusic');
+                if (bgMusic) {
+                    bgMusic.muted = false;
+                    bgMusic.volume = gameSettings.music.volume;
+                    bgMusic.play().catch(e => {
+                        console.log('Background music failed to start:', e);
+                    });
+                }
+            }
+        } else {
+            document.getElementById('landingPage').style.display = 'flex';
+            document.getElementById('gamePage').style.display = 'none';
+        }
+        
+        // Step 5: Remove loading overlay and show app
+        console.log('Step 5: Removing loading overlay...');
+        await removeLoadingOverlay();
+        
+        console.log('=== App Initialization Complete ===');
+        
+    } catch (error) {
+        console.error('Error during app initialization:', error);
+        // Fallback: show landing page and remove overlay
+        document.getElementById('landingPage').style.display = 'flex';
+        document.getElementById('gamePage').style.display = 'none';
+        await removeLoadingOverlay();
+    }
+}
+
+// Complete game resume preparation - all operations done behind loading overlay
+async function prepareCompleteGameResume() {
+    try {
+        console.log('Starting complete game resume preparation...');
+        let savedState = null;
+        
+        // Load saved state
+        if (typeof window.loadGameState === 'function') {
+            console.log('Using Capacitor loadGameState function');
+            savedState = await window.loadGameState();
+            console.log('Loaded state from Capacitor:', savedState);
+        } else {
+            console.log('Capacitor not available, using localStorage');
+            const saved = localStorage.getItem('savedGameState');
+            if (saved) {
+                savedState = JSON.parse(saved);
+                console.log('Loaded state from localStorage:', savedState);
+            } else {
+                console.log('No saved state in localStorage');
+            }
+        }
+        
+        if (savedState && savedState.selectedWords && savedState.selectedWords.length > 0) {
+            console.log('Restoring complete game state...');
+            
+            // Restore all game state
+            gameState.selectedWords = savedState.selectedWords;
+            gameState.currentWords = savedState.currentWords || [];
+            gameState.wordProgress = savedState.wordProgress || {};
+            gameState.starsEarned = savedState.starsEarned || 0;
+            gameState.completedWords = savedState.completedWords || 0;
+            gameState.activeWordIndex = savedState.activeWordIndex || 0;
+            gameState.tierRequirement = savedState.tierRequirement || 3;
+            currentBand = savedState.band || 1;
+            randomizeWords = savedState.randomize || false;
+            
+            // Update UI elements
+            document.getElementById('totalStarsCount').textContent = gameState.selectedWords.length;
+            document.getElementById('starsCount').textContent = gameState.starsEarned;
+            
+            // Save page state
+            savePageState('game');
+            
+            // Initialize game components completely
+            console.log('Initializing all game components...');
+            await initializeCompleteGameComponents();
+            
+            // Clear saved state reference
+            savedGameState = null;
+            
+            console.log('Complete game resume preparation finished');
+        } else {
+            throw new Error('No valid saved state found');
+        }
+    } catch (error) {
+        console.error('Error preparing complete game resume:', error);
+        throw error;
+    }
+}
+
+// Remove loading overlay and show app content
+async function removeLoadingOverlay() {
+    try {
+        console.log('Removing loading overlay...');
+        const overlay = document.getElementById('appLoadingOverlay');
+        const appContent = document.getElementById('appContent');
+        
+        if (overlay && appContent) {
+            // Fade out overlay
+            overlay.style.transition = 'opacity 0.3s ease-out';
+            overlay.style.opacity = '0';
+            
+            // Show app content
+            appContent.style.display = 'block';
+            
+            // Remove overlay after fade
+            setTimeout(() => {
+                if (overlay.parentNode) {
+                    overlay.parentNode.removeChild(overlay);
+                }
+            }, 300);
+            
+            console.log('Loading overlay removed, app visible');
+        } else {
+            console.warn('Loading overlay or app content not found');
+        }
+    } catch (error) {
+        console.error('Error removing loading overlay:', error);
+        // Fallback: force show app content
+        const appContent = document.getElementById('appContent');
+        if (appContent) {
+            appContent.style.display = 'block';
+        }
+    }
+}
+
+// Complete game component initialization for background preparation
+async function initializeCompleteGameComponents() {
+    // FORCE complete reset of all problematic state
+    gameState.activeWordIndex = gameState.activeWordIndex || 0;
+    gameState.charactersOnScreen = [];
+    gameState.optionButtons = [];
+    gameState.currentOptions = [];
+    gameState.streakCount = 0;
+    gameState.lastAnswerTime = 0;
+    gameState.alreadyPenalized = false;
+    gameState.shakeInProgress = false;
+    gameState.pendingCharacterAdvance = false;
+    gameState.mascotAnimationPlaying = false;
+    gameState.sadAnimationActive = false;
+    gameState.mascotAnimationQueue = [];
+    
+    // Ensure audioHotkey is preserved
+    if (!gameState.audioHotkey) {
+        gameState.audioHotkey = ' '; // Default to spacebar
+    }
+    
+    // Re-setup keyboard listeners
+    setupKeyboardListeners();
+    
+    // Initialize components in strict order
+    setupCharactersRow();
+    setupOptionsGrid();
+    
+    // Set mascot to walk and update interaction time
+    setMascotAnimation('walk');
+    gameSettings.mascot.lastInteraction = Date.now();
+    
+    console.log('Game components initialized');
+}
+
+
+async function loadSavedGameState() {
+    try {
+        if (typeof window.loadGameState === 'function') {
+            return await window.loadGameState();
+        } else {
+            const saved = localStorage.getItem('savedGameState');
+            return saved ? JSON.parse(saved) : null;
+        }
+    } catch (error) {
+        console.error('Error loading saved game state:', error);
+        return null;
+    }
+}
+
+async function clearSavedGameState() {
+    try {
+        if (typeof window.saveGameState === 'function') {
+            await window.saveGameState(null);
+        } else {
+            localStorage.removeItem('savedGameState');
+        }
+        console.log('Saved game state cleared');
+    } catch (error) {
+        console.error('Error clearing saved game state:', error);
+    }
+}
+
+// Adaptive text sizing for option buttons
+function applyAdaptiveTextSize(button) {
+    const span = button.querySelector('span');
+    if (!span) return;
+    
+    const text = span.textContent;
+    const textLength = text.length;
+    const isMobile = window.innerWidth <= 768;
+    
+    // Base font sizes
+    let fontSize;
+    
+    if (isMobile) {
+        // Mobile sizing
+        if (textLength <= 10) {
+            fontSize = '1.0rem';
+        } else if (textLength <= 20) {
+            fontSize = '0.9rem';
+        } else if (textLength <= 30) {
+            fontSize = '0.8rem';
+        } else if (textLength <= 40) {
+            fontSize = '0.75rem';
+        } else {
+            fontSize = '0.7rem';
+        }
+    } else {
+        // Desktop sizing
+        if (textLength <= 10) {
+            fontSize = '1.3rem';
+        } else if (textLength <= 20) {
+            fontSize = '1.1rem';
+        } else if (textLength <= 30) {
+            fontSize = '1.0rem';
+        } else if (textLength <= 40) {
+            fontSize = '0.9rem';
+        } else {
+            fontSize = '0.8rem';
+        }
+    }
+    
+    span.style.fontSize = fontSize;
+    span.style.lineHeight = textLength > 20 ? '1.1' : '1.2';
+    
+    // Adjust padding for better visual balance
+    if (textLength > 30) {
+        button.style.padding = isMobile ? '8px 6px' : '16px 12px';
+    } else {
+        button.style.padding = isMobile ? '12px 8px' : '20px 15px';
+    }
+}
+
+// Enhanced TTS with Capacitor support
 function playPronunciation(text) {
     if (!text || !gameSettings.tts.enabled) return;
     
     // Prevent duplicate TTS calls for same text within 500ms
     const now = Date.now();
     if (ttsState.lastText === text && now - ttsState.lastPlayTime < 500) {
-        console.log('Preventing duplicate TTS call for:', text);
+        // DEBUG: 'Preventing duplicate TTS call for:', text);
         return;
     }
     
-    // Stop any currently playing TTS
-    stopCurrentTTS();
+    // Use Capacitor TTS if available, otherwise use desktop TTS
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        // Use Capacitor TTS for mobile
+        window.playPronunciation(text);
+    } else {
+        // Use desktop TTS (Web Speech API with Google TTS fallback)
+        stopCurrentTTS();
+        playDesktopTTS(text);
+    }
     
-    // Use multiple fallback strategies for mobile
-    playTTSWithFallbacks(text, 0);
     ttsState.lastText = text;
     ttsState.lastPlayTime = now;
+}
+
+// Desktop TTS using Web Speech API (better for desktop browsers)
+function playDesktopTTS(text) {
+    // Try Web Speech API first (native browser TTS)
+    if ('speechSynthesis' in window) {
+        try {
+            // Stop any ongoing speech
+            window.speechSynthesis.cancel();
+            
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'zh-CN';
+            utterance.rate = 0.8;
+            utterance.pitch = 1.0;
+            utterance.volume = gameSettings.tts.volume;
+            
+            ttsState.isPlaying = true;
+            ttsState.currentAudio = { type: 'speechSynthesis', utterance };
+            
+            utterance.onend = () => {
+                ttsState.isPlaying = false;
+                if (ttsState.currentAudio && ttsState.currentAudio.type === 'speechSynthesis') {
+                    ttsState.currentAudio = null;
+                }
+            };
+            
+            utterance.onerror = (event) => {
+                console.log('Web Speech API error, trying Google TTS fallback:', event.error);
+                ttsState.isPlaying = false;
+                if (ttsState.currentAudio && ttsState.currentAudio.type === 'speechSynthesis') {
+                    ttsState.currentAudio = null;
+                }
+                // Fallback to Google TTS
+                playTTSWithFallbacks(text, 0);
+            };
+            
+            window.speechSynthesis.speak(utterance);
+            return;
+        } catch (error) {
+            console.log('Web Speech API exception:', error);
+            ttsState.isPlaying = false;
+            ttsState.currentAudio = null;
+        }
+    }
+    
+    // Fallback to Google TTS if Web Speech API not available or failed
+    playTTSWithFallbacks(text, 0);
 }
 
 function playTTSWithFallbacks(text, attemptNumber) {
     const maxAttempts = 3;
     if (attemptNumber >= maxAttempts) {
-        console.log('All TTS attempts failed for:', text);
+        // DEBUG: 'All TTS attempts failed for:', text);
         ttsState.isPlaying = false;
         return;
     }
@@ -167,7 +607,7 @@ function playTTSWithFallbacks(text, attemptNumber) {
         
         // Set up error handling before setting src
         audio.onerror = function(e) {
-            console.log(`TTS attempt ${attemptNumber + 1} failed:`, e);
+            // DEBUG: `TTS attempt ${attemptNumber + 1} failed:`, e);
             cleanup();
             // Try next fallback after short delay, but only if we haven't been stopped
             if (ttsState.currentAudio === audio) {
@@ -180,7 +620,7 @@ function playTTSWithFallbacks(text, attemptNumber) {
         // Set up success and end handling
         audio.onended = cleanup;
         audio.oncanplaythrough = function() {
-            console.log(`TTS attempt ${attemptNumber + 1} loaded successfully`);
+            // DEBUG: `TTS attempt ${attemptNumber + 1} loaded successfully`);
         };
         
         // Mobile browsers need user interaction, so ensure we have it
@@ -191,9 +631,9 @@ function playTTSWithFallbacks(text, attemptNumber) {
         
         if (playPromise !== undefined) {
             playPromise.then(() => {
-                console.log(`TTS started successfully on attempt ${attemptNumber + 1}`);
+                // DEBUG: `TTS started successfully on attempt ${attemptNumber + 1}`);
             }).catch(err => {
-                console.log(`TTS play failed on attempt ${attemptNumber + 1}:`, err);
+                // DEBUG: `TTS play failed on attempt ${attemptNumber + 1}:`, err);
                 cleanup();
                 // Try next fallback, but only if we haven't been stopped
                 if (ttsState.currentAudio === audio) {
@@ -205,7 +645,7 @@ function playTTSWithFallbacks(text, attemptNumber) {
         }
         
     } catch (error) {
-        console.log(`TTS creation failed on attempt ${attemptNumber + 1}:`, error);
+        // DEBUG: `TTS creation failed on attempt ${attemptNumber + 1}:`, error);
         ttsState.isPlaying = false;
         // Try next fallback, but only if we haven't been stopped
         setTimeout(() => {
@@ -216,15 +656,22 @@ function playTTSWithFallbacks(text, attemptNumber) {
 
 // Add function to stop current TTS
 function stopCurrentTTS() {
-    if (ttsState.currentAudio) {
+    // Stop Web Speech API if active
+    if (window.speechSynthesis) {
+        window.speechSynthesis.cancel();
+    }
+    
+    // Stop audio element TTS if active
+    if (ttsState.currentAudio && ttsState.currentAudio.pause) {
         try {
             ttsState.currentAudio.pause();
             ttsState.currentAudio.src = '';
         } catch (error) {
-            console.log('Error stopping TTS:', error);
+            // DEBUG: 'Error stopping TTS:', error);
         }
-        ttsState.currentAudio = null;
     }
+    
+    ttsState.currentAudio = null;
     ttsState.isPlaying = false;
 }
 
@@ -235,11 +682,11 @@ function replayActiveCharacterAudio() {
         if (activeCharacter && activeCharacter.word) {
             // Check if TTS is currently playing to prevent spam
             if (ttsState.isPlaying) {
-                console.log('TTS already playing, ignoring replay request');
+                // DEBUG: 'TTS already playing, ignoring replay request');
                 return;
             }
             
-            console.log('Replaying audio for active character:', activeCharacter.word.chinese);
+            // DEBUG: 'Replaying audio for active character:', activeCharacter.word.chinese);
             playPronunciation(getChineseChar(activeCharacter.word));
         }
     }
@@ -270,13 +717,13 @@ function setupActiveCharacterClickHandler() {
             child.style.pointerEvents = 'none'; // Prevent event interference
         });
         
-        console.log('Click handler set up for active character:', activeContainer.querySelector('.chinese-char')?.textContent);
+        // DEBUG: 'Click handler set up for active character:', activeContainer.querySelector('.chinese-char')?.textContent);
     }
 }
 
 // Separate click handler for better debugging and control
 function handleCharacterClick(event) {
-    console.log('Active character clicked!', event.target);
+    // DEBUG: 'Active character clicked!', event.target);
     event.preventDefault();
     event.stopPropagation();
     replayActiveCharacterAudio();
@@ -297,7 +744,7 @@ function getAudioHotkeyDisplayName() {
 
 // Add TTS reset function for mobile issues
 function resetTTSSystem() {
-    console.log('Resetting TTS system for mobile stability');
+    // DEBUG: 'Resetting TTS system for mobile stability');
     
     // Stop current TTS first
     stopCurrentTTS();
@@ -312,7 +759,7 @@ function resetTTSSystem() {
                 audio.parentNode.removeChild(audio);
             }
         } catch (error) {
-            console.log('Error cleaning up TTS element:', error);
+            // DEBUG: 'Error cleaning up TTS element:', error);
         }
     });
     
@@ -339,6 +786,14 @@ function toggleTTS() {
     } else {
         toggle.classList.remove('active');
     }
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function adjustTTSVolume() {
@@ -347,6 +802,14 @@ function adjustTTSVolume() {
     
     gameSettings.tts.volume = slider.value / 100;
     label.textContent = `${slider.value}%`;
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 // Background Music Management
@@ -360,11 +823,11 @@ function initializeBackgroundMusic() {
         
         // Set up proper event listeners for music
         bgMusic.addEventListener('canplay', () => {
-            console.log('Background music is ready to play');
+            // DEBUG: 'Background music is ready to play');
         });
         
         bgMusic.addEventListener('error', (e) => {
-            console.log('Background music error:', e);
+            // DEBUG: 'Background music error:', e);
         });
         
         // Initialize toggle state
@@ -393,12 +856,12 @@ function toggleMusic() {
             const playPromise = bgMusic.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log('Background music started successfully');
+                    // DEBUG: 'Background music started successfully');
                 }).catch(error => {
-                    console.log('Music play failed (likely due to browser autoplay policy):', error);
+                    // DEBUG: 'Music play failed (likely due to browser autoplay policy):', error);
                     // Show user feedback that they need to interact first
                     if (error.name === 'NotAllowedError') {
-                        console.log('User interaction required for music playback');
+                        // DEBUG: 'User interaction required for music playback');
                     }
                 });
             }
@@ -409,6 +872,14 @@ function toggleMusic() {
             bgMusic.pause();
             bgMusic.muted = true;
         }
+    }
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
     }
 }
 
@@ -423,6 +894,14 @@ function adjustMusicVolume() {
     if (bgMusic) {
         bgMusic.volume = gameSettings.music.volume;
     }
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function toggleSFX() {
@@ -435,6 +914,14 @@ function toggleSFX() {
     } else {
         toggle.classList.remove('active');
     }
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function adjustSFXVolume() {
@@ -443,6 +930,14 @@ function adjustSFXVolume() {
     
     gameSettings.sfx.volume = slider.value / 100;
     label.textContent = `${slider.value}%`;
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 // Enhanced Sound Effects System
@@ -481,7 +976,7 @@ function playSound(type) {
         
         // ADD THIS SAFETY CHECK:
         if (!frequencies || !Array.isArray(frequencies)) {
-            console.log('Invalid frequencies for sound type:', type);
+            // DEBUG: 'Invalid frequencies for sound type:', type);
             return;
         }
         
@@ -490,7 +985,7 @@ function playSound(type) {
         });
         
     } catch (error) {
-        console.log('Sound synthesis failed:', error);
+        // DEBUG: 'Sound synthesis failed:', error);
     }
 }
 
@@ -501,10 +996,10 @@ function playClickSound() {
         clickAudio.volume = gameSettings.sfx.volume * 0.3;
         clickAudio.currentTime = 0; // Reset to beginning
         clickAudio.play().catch(err => {
-            console.log('Click sound failed:', err);
+            // DEBUG: 'Click sound failed:', err);
         });
     } catch (error) {
-        console.log('Click sound playback failed:', error);
+        // DEBUG: 'Click sound playback failed:', error);
     }
 }
 
@@ -535,7 +1030,19 @@ function selectAllWords() {
     const maxWords = parseInt(document.getElementById('startInput').max);
     document.getElementById('startInput').value = 1;
     document.getElementById('endInput').value = maxWords;
-    updateRange();
+    updateRange(true);
+}
+
+// Update tier requirement and save settings
+function updateTierRequirement() {
+    const tierRequirement = parseInt(document.getElementById('landingTierRequirement').value);
+    gameSettings.ui.tierRequirement = tierRequirement;
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 // Add click effect listener to entire document
@@ -550,9 +1057,11 @@ document.addEventListener('click', function enableMusicOnFirstClick() {
             const playPromise = bgMusic.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log('Background music enabled after user interaction');
+                    // DEBUG: 'Background music enabled after user interaction');
                     musicInteractionHandled = true;
-                }).catch(e => console.log('Music still failed after user interaction:', e));
+                }).catch(e => {
+                    // DEBUG: Music still failed after user interaction
+                });
             }
         }
     }
@@ -621,7 +1130,7 @@ function queueMascotAnimation(animationType) {
     if (animationType === 'ouch') {
         // Block ouch if sad animation is active
         if (gameState.sadAnimationActive) {
-            console.log('Blocking ouch animation because sad animation is active');
+            // DEBUG: 'Blocking ouch animation because sad animation is active');
             return;
         }
         
@@ -653,7 +1162,7 @@ function queueMascotAnimation(animationType) {
 
     // Block all other animations if sad is active
     if (gameState.sadAnimationActive) {
-        console.log(`Blocking ${animationType} animation because sad animation is active`);
+        // DEBUG: `Blocking ${animationType} animation because sad animation is active`);
         return;
     }
 
@@ -691,7 +1200,7 @@ function processAnimationQueue() {
         // IMPORTANT: Clear sad animation flag when sad animation completes
         if (nextAnimation === 'sad') {
             gameState.sadAnimationActive = false;
-            console.log('Sad animation completed, clearing sadAnimationActive flag');
+            // DEBUG: 'Sad animation completed, clearing sadAnimationActive flag');
         }
         
         // After action animations, return to walk and update interaction time
@@ -723,6 +1232,33 @@ function togglePinyin() {
     }
     
     updatePinyinDisplay();
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
+}
+
+function toggleWritingRequired() {
+    gameSettings.ui.writingRequired = !gameSettings.ui.writingRequired;
+    const writingReqToggle = document.getElementById('writingRequiredToggle');
+    if (writingReqToggle) {
+        if (gameSettings.ui.writingRequired) writingReqToggle.classList.add('active');
+        else writingReqToggle.classList.remove('active');
+    }
+    // Update checkmarks visibility immediately on current grid
+    updateAllCheckmarks();
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function togglePinyinMode() {
@@ -737,6 +1273,14 @@ function togglePinyinMode() {
     
     // Update option buttons to show pinyin or english
     updateOptionButtonsText();
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function updatePinyinDisplay() {
@@ -759,22 +1303,113 @@ function updateOptionButtonsText() {
             const span = button.querySelector('span');
             if (span) {
                 span.textContent = gameSettings.ui.pinyinMode ? word.pinyin : word.english;
+                fitTextToButton(button, span);
             }
         }
     });
+}
+
+// Auto-fit text inside option button span without clipping
+function fitTextToButton(button, span) {
+    try {
+        const maxFont = 22; // allow larger by default
+        const minFont = 10; // px
+        // Start from current computed size or max
+        let size = parseFloat(window.getComputedStyle(span).fontSize) || maxFont;
+        size = Math.min(size, maxFont);
+        span.style.whiteSpace = 'normal';
+        span.style.wordBreak = 'break-word';
+        span.style.hyphens = 'auto';
+        const maxHeight = button.clientHeight - 40; // account for bars/padding
+        const maxWidth = button.clientWidth - 24;
+        for (let s = size; s >= minFont; s -= 1) {
+            span.style.fontSize = s + 'px';
+            // measure
+            const overflows = span.scrollHeight > maxHeight || span.scrollWidth > maxWidth;
+            if (!overflows) break;
+        }
+    } catch (_) {}
 }
 
 function toggleEasyMode() {
     gameState.easyMode = !gameState.easyMode;
     gameSettings.ui.easyMode = gameState.easyMode;
     updateSettingsToggles();
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
 }
 
 function toggleTraditional() {
     useTraditional = !useTraditional;
     gameSettings.ui.traditional = useTraditional;
+    // Toggle body class to drive font variant selection
+    document.body.classList.toggle('use-traditional', !!useTraditional);
     updateSettingsToggles();
     updateCharacterDisplay();
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        // Fallback to localStorage for web
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+    }
+}
+
+function changeHanziFont() {
+    const select = document.getElementById('hanziFontSelect');
+    const selectedFont = select.value;
+    
+    console.log('Changing font to:', selectedFont);
+    
+    // Save the setting
+    gameSettings.ui.hanziFont = selectedFont;
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    }
+    
+    // Apply the font class to the body
+    document.body.className = document.body.className.replace(/\bhanzi-[^\s]+\b/g, '').trim();
+    document.body.classList.add(`hanzi-${selectedFont}`);
+    
+    console.log('Body classes after font change:', document.body.className);
+    
+    // Update all visible Chinese characters
+    updateCharacterDisplay();
+    
+    // Update font preview
+    updateFontPreview();
+}
+
+function updateFontPreview() {
+    const select = document.getElementById('hanziFontSelect');
+    const preview = document.getElementById('fontPreview');
+    
+    if (!select || !preview) {
+        console.log('Font preview elements not found');
+        return;
+    }
+    
+    const selectedFont = select.value;
+    console.log('Updating font preview to:', selectedFont);
+    
+    // Remove any existing font classes from preview
+    preview.className = 'font-preview-text';
+    // Apply the selected font class to preview (body's .use-traditional controls variant)
+    preview.classList.add(`hanzi-${selectedFont}`);
+    
+    // Debug: Check if the class was applied
+    console.log('Preview element classes:', preview.className);
+    console.log('Body classes:', document.body.className);
+    
+    // Force a reflow to ensure the font change is applied
+    preview.offsetHeight;
 }
 
 function updateCharacterDisplay() {
@@ -782,12 +1417,14 @@ function updateCharacterDisplay() {
     gameState.charactersOnScreen.forEach(char => {
         const chineseCharElement = char.element.querySelector('.chinese-char');
         if (chineseCharElement) {
-            chineseCharElement.textContent = getChineseChar(char.word);
+            const chineseText = getChineseChar(char.word);
+            chineseCharElement.textContent = chineseText;
+            chineseCharElement.setAttribute('data-length', chineseText.length);
         }
         
         // Recalculate container width if needed
         const chineseText = getChineseChar(char.word);
-        const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+        const estimatedWidth = Math.max(130, chineseText.length * 35 + 45);
         char.width = estimatedWidth;
         char.element.style.width = `${estimatedWidth}px`;
     });
@@ -800,6 +1437,24 @@ function updateSettingsToggles() {
     // Update all toggle states in settings modal
     const easyToggle = document.getElementById('easyModeToggleSettings');
     const traditionalToggle = document.getElementById('traditionalToggleSettings');
+    const hanziFontSelect = document.getElementById('hanziFontSelect');
+    const writingReqToggle = document.getElementById('writingRequiredToggle');
+    const pinyinToggle = document.getElementById('pinyinToggle');
+    const pinyinModeToggle = document.getElementById('pinyinModeToggle');
+    const musicToggle = document.getElementById('musicToggle');
+    const sfxToggle = document.getElementById('sfxToggle');
+    const ttsToggle = document.getElementById('ttsToggle');
+    const musicVolume = document.getElementById('musicVolume');
+    const sfxVolume = document.getElementById('sfxVolume');
+    const ttsVolume = document.getElementById('ttsVolume');
+    const musicVolumeText = document.getElementById('musicVolumeText');
+    const sfxVolumeText = document.getElementById('sfxVolumeText');
+    const ttsVolumeText = document.getElementById('ttsVolumeText');
+    const randomizeCheckbox = document.getElementById('randomizeCheckbox');
+    const bandSelector = document.getElementById('bandSelector');
+    const startInput = document.getElementById('startInput');
+    const endInput = document.getElementById('endInput');
+    const landingTierRequirement = document.getElementById('landingTierRequirement');
     
     if (gameState.easyMode) {
         easyToggle?.classList.add('active');
@@ -807,10 +1462,82 @@ function updateSettingsToggles() {
         easyToggle?.classList.remove('active');
     }
     
-    if (useTraditional) {
-        traditionalToggle?.classList.add('active');
-    } else {
-        traditionalToggle?.classList.remove('active');
+    if (useTraditional) traditionalToggle?.classList.add('active');
+    else traditionalToggle?.classList.remove('active');
+    
+    // Initialize Hanzi font selection
+    if (hanziFontSelect && gameSettings.ui.hanziFont) {
+        // Migrate legacy saved keys to new options
+        const legacyToNew = {
+            'kaiti': 'opt1',
+            'song-ming': 'opt1',
+            'heiti': 'opt1',
+            'fangsong': 'opt3',
+            'xingshu': 'opt2',
+            'lishu': 'opt2',
+            'monospace': 'opt2',
+            'yahei': 'opt1'
+        };
+        const saved = gameSettings.ui.hanziFont;
+        const migrated = legacyToNew[saved] || saved;
+        gameSettings.ui.hanziFont = ['opt1','opt2','opt3'].includes(migrated) ? migrated : 'opt1';
+        hanziFontSelect.value = gameSettings.ui.hanziFont;
+        // Apply the font class to the body
+        document.body.className = document.body.className.replace(/\bhanzi-[^\s]+\b/g, '').trim();
+        document.body.classList.add(`hanzi-${gameSettings.ui.hanziFont}`);
+        // Apply traditional body class based on saved setting
+        document.body.classList.toggle('use-traditional', !!gameSettings.ui.traditional);
+        // Initialize font preview
+        updateFontPreview();
+    }
+
+    // Initialize Writing Required toggle
+    if (writingReqToggle) {
+        if (gameSettings.ui.writingRequired) writingReqToggle.classList.add('active');
+        else writingReqToggle.classList.remove('active');
+    }
+
+    // Pinyin toggles
+    if (pinyinToggle) {
+        if (gameSettings.ui.showPinyin) pinyinToggle.classList.add('active');
+        else pinyinToggle.classList.remove('active');
+    }
+    if (pinyinModeToggle) {
+        if (gameSettings.ui.pinyinMode) pinyinModeToggle.classList.add('active');
+        else pinyinModeToggle.classList.remove('active');
+    }
+
+    // Audio toggles and sliders
+    if (musicToggle) musicToggle.classList.toggle('active', !!gameSettings.music.enabled);
+    if (sfxToggle) sfxToggle.classList.toggle('active', !!gameSettings.sfx.enabled);
+    if (ttsToggle) ttsToggle.classList.toggle('active', !!gameSettings.tts.enabled);
+    if (musicVolume) { musicVolume.value = Math.round((gameSettings.music.volume || 0) * 100); }
+    if (sfxVolume) { sfxVolume.value = Math.round((gameSettings.sfx.volume || 0) * 100); }
+    if (ttsVolume) { ttsVolume.value = Math.round((gameSettings.tts.volume || 0) * 100); }
+    if (musicVolumeText && musicVolume) musicVolumeText.textContent = `${musicVolume.value}%`;
+    if (sfxVolumeText && sfxVolume) sfxVolumeText.textContent = `${sfxVolume.value}%`;
+    if (ttsVolumeText && ttsVolume) ttsVolumeText.textContent = `${ttsVolume.value}%`;
+
+    // Landing controls
+    if (randomizeCheckbox) {
+        randomizeWords = !!gameSettings.ui.randomize;
+        randomizeCheckbox.classList.toggle('checked', randomizeWords);
+    }
+    if (bandSelector && Number.isFinite(gameSettings.ui.band)) {
+        bandSelector.value = String(gameSettings.ui.band);
+    }
+    if (startInput && Number.isFinite(gameSettings.ui.rangeStart)) {
+        startInput.value = String(gameSettings.ui.rangeStart);
+        const startValue = document.getElementById('startValue');
+        if (startValue) startValue.textContent = startInput.value;
+    }
+    if (endInput && Number.isFinite(gameSettings.ui.rangeEnd)) {
+        endInput.value = String(gameSettings.ui.rangeEnd);
+        const endValue = document.getElementById('endValue');
+        if (endValue) endValue.textContent = endInput.value;
+    }
+    if (landingTierRequirement && Number.isFinite(gameSettings.ui.tierRequirement)) {
+        landingTierRequirement.value = String(gameSettings.ui.tierRequirement);
     }
 }
 
@@ -851,7 +1578,7 @@ function highlightCorrectAnswer(correctWord) {
     });
 }
 
-function selectOption(optionIndex) {
+async function selectOption(optionIndex) {
     const selectedWord = gameState.currentOptions[optionIndex];
     const activeCharacter = gameState.charactersOnScreen[gameState.activeWordIndex];
     
@@ -874,11 +1601,11 @@ function selectOption(optionIndex) {
         }
         gameState.lastAnswerTime = currentTime;
         
-        handleCorrectAnswer(selectedWord, button, optionIndex);
+        await handleCorrectAnswer(selectedWord, button, optionIndex);
         gameState.alreadyPenalized = false;
     } else {
         gameState.streakCount = 0;
-        handleIncorrectAnswer(activeCharacter.word, optionIndex);
+        await handleIncorrectAnswer(activeCharacter.word, optionIndex);
         
         // ONLY shake - don't set up any character advance
         highlightCorrectAnswer(activeCharacter.word);
@@ -891,7 +1618,7 @@ function selectOption(optionIndex) {
     }
 }
 
-function handleCorrectAnswer(word, button, optionIndex) {
+async function handleCorrectAnswer(word, button, optionIndex) {
     playSound('correct');
     button.classList.add('correct-animation');
     
@@ -909,7 +1636,21 @@ function handleCorrectAnswer(word, button, optionIndex) {
         progress.tier = 'gold';
         tierChanged = true;
     } else if (progress.count === req * 3 && progress.tier === 'gold') {
-        // Word completed - earn star
+        // Check quiz requirement
+        if (gameSettings.ui.writingRequired && !isCharacterQuizCompleted(word.chinese)) {
+            // Hanzi quiz required - show auto-popup
+            hanziQuizState.autoPopupPending = true;
+            hanziQuizState.currentQuizWord = word;
+            
+            // Show the quiz immediately
+            setTimeout(() => {
+                showHanziQuizModal(word);
+            }, 500); // Small delay for smooth UX
+            
+            return; // Don't award star yet
+        }
+        
+        // Word completed - earn star (quiz already completed)
         createStarAnimation(button);
         playStarShootAnimation();
         playSound('starShoot');
@@ -920,13 +1661,22 @@ function handleCorrectAnswer(word, button, optionIndex) {
         updateUI();
         
         if (gameState.completedWords === gameState.selectedWords.length) {
-            setTimeout(() => alert('Congratulations! You completed all words!'), 1000);
+            setTimeout(() => {
+                alert('Congratulations! You completed all words!');
+                // Clear the saved game state since game is completed
+                clearSavedGameState();
+                // Return to landing page
+                returnToMenu();
+            }, 1000);
             return;
         }
         
         // Remove ONLY the active character, then add new word to rotation
         removeActiveCharacterOnly();
         addNewWordToRotation(word, optionIndex);
+        
+        // Save game state after character advancement
+        await saveCurrentGameState();
         
         setTimeout(() => button.classList.remove('correct-animation'), 800);
         return;
@@ -941,6 +1691,9 @@ function handleCorrectAnswer(word, button, optionIndex) {
     
     updateOptionButton(optionIndex, word, progress);
     removeActiveCharacterAndAdvance();
+    
+    // Save game state after all updates are complete
+    await saveCurrentGameState();
     
     setTimeout(() => button.classList.remove('correct-animation'), 800);
 }
@@ -973,11 +1726,11 @@ function removeActiveCharacterOnly() {
     container.className = 'character-container upcoming';
     container.innerHTML = `
         <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
-        <div class="chinese-char">${getChineseChar(word)}</div>
+        ${createChineseCharElement(word)}
     `;
     
     const chineseText = getChineseChar(word);
-    const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+    const estimatedWidth = Math.max(130, chineseText.length * 35 + 45);
     container.style.width = `${estimatedWidth}px`;
     
     const charactersRow = document.getElementById('charactersRow');
@@ -991,7 +1744,7 @@ function removeActiveCharacterOnly() {
     setTimeout(() => playPronunciation(getChineseChar(gameState.charactersOnScreen[0].word)), 300);
 }
 
-function handleIncorrectAnswer(correctWord, selectedOptionIndex) {
+async function handleIncorrectAnswer(correctWord, selectedOptionIndex) {
     // Only penalize if NOT in easy mode
     if (!gameSettings.ui.easyMode && !gameState.alreadyPenalized) {
         gameState.alreadyPenalized = true;
@@ -1028,6 +1781,9 @@ function handleIncorrectAnswer(correctWord, selectedOptionIndex) {
             }
             
             updateOptionButton(correctOptionIndex, correctWord, progress);
+            
+            // Save game state after tier demotion
+            await saveCurrentGameState();
         }
     } else {
         // Easy mode or already penalized - just play ouch
@@ -1039,7 +1795,7 @@ function handleIncorrectAnswer(correctWord, selectedOptionIndex) {
 
 // Game Initialization System
 function initializeGame() {
-    console.log('=== INITIALIZING FRESH GAME ===');
+    // DEBUG: '=== INITIALIZING FRESH GAME ===');
     
     // FORCE complete reset of all problematic state
     gameState.activeWordIndex = 0;
@@ -1060,11 +1816,7 @@ function initializeGame() {
         gameState.audioHotkey = ' '; // Default to spacebar
     }
     
-    console.log('State after reset:', {
-        activeWordIndex: gameState.activeWordIndex,
-        charactersOnScreen: gameState.charactersOnScreen.length,
-        currentWords: gameState.currentWords.length
-    });
+    // DEBUG: State after reset - activeWordIndex, charactersOnScreen, currentWords
     
     // Re-setup keyboard listeners
     setupKeyboardListeners();
@@ -1074,13 +1826,7 @@ function initializeGame() {
     setupOptionsGrid();
     
     // VERIFY synchronization after setup
-    console.log('State after setup:', {
-        activeWordIndex: gameState.activeWordIndex,
-        charactersOnScreen: gameState.charactersOnScreen.length,
-        optionButtons: gameState.optionButtons.length,
-        activeWord: gameState.charactersOnScreen[0]?.word.chinese,
-        firstOption: gameState.currentOptions[0]?.chinese
-    });
+    // DEBUG: State after setup - activeWordIndex, charactersOnScreen, optionButtons, activeWord, firstOption
     
     // Set mascot to walk and update interaction time
     setMascotAnimation('walk');
@@ -1095,16 +1841,16 @@ function initializeGame() {
             const playPromise = bgMusic.play();
             if (playPromise !== undefined) {
                 playPromise.then(() => {
-                    console.log('Background music started successfully in game');
+                    // DEBUG: 'Background music started successfully in game');
                 }).catch(e => {
-                    console.log('Background music failed to start:', e);
+                    // DEBUG: 'Background music failed to start:', e);
                     // If it fails here, the file might not exist or be corrupted
                 });
             }
         }
     }
     
-    console.log('=== GAME INITIALIZATION COMPLETE ===');
+    // DEBUG: '=== GAME INITIALIZATION COMPLETE ===');
 }
 
 function setupCharactersRow() {
@@ -1140,21 +1886,26 @@ function setupCharactersRow() {
         // Create character content with pinyin visibility control
         container.innerHTML = `
             <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
-            <div class="chinese-char">${getChineseChar(word)}</div>
+            ${createChineseCharElement(word)}
         `;
         
         
         // Calculate container width based on content
         const chineseText = getChineseChar(word);
-        const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+        const estimatedWidth = Math.max(130, chineseText.length * 35 + 45);
         container.style.width = `${estimatedWidth}px`;
         
         charactersRow.appendChild(container);
         gameState.charactersOnScreen.push({ element: container, word: word, width: estimatedWidth });
     }
     
-    // Position all character containers
-    positionCharacterContainers();
+    // Position all character containers after browser completes layout
+    // Using double requestAnimationFrame to ensure DOM measurements are accurate
+    requestAnimationFrame(() => {
+        requestAnimationFrame(() => {
+            positionCharacterContainers();
+        });
+    });
     
     // Set up click handler for active character
     setupActiveCharacterClickHandler();
@@ -1167,17 +1918,21 @@ function getRandomCurrentWord() {
 function setupOptionsGrid() {
     const optionsGrid = document.getElementById('optionsGrid');
     
-    // Preserve the voice button before cleanup
+    // Preserve the control buttons before cleanup
     const voiceButton = document.getElementById('voiceReplayBtn');
+    const hanziButton = document.getElementById('hanziQuizBtn');
     
     // Complete cleanup
     optionsGrid.innerHTML = '';
     gameState.optionButtons = [];
     gameState.currentOptions = [];
     
-    // Re-add the voice button after cleanup
+    // Re-add the control buttons after cleanup
     if (voiceButton) {
         optionsGrid.appendChild(voiceButton);
+    }
+    if (hanziButton) {
+        optionsGrid.appendChild(hanziButton);
     }
     
     // Ensure we have words to work with
@@ -1212,8 +1967,17 @@ function setupOptionsGrid() {
                 <div class="hotkey">${gameState.hotkeys[i]}</div>
             `;
             
-            button.onclick = () => selectOption(i);
+            // Apply adaptive text sizing
+            applyAdaptiveTextSize(button);
+            
+            // Add checkmark
+            updateCheckmarkForButton(button, word);
+            
+            button.onclick = async () => await selectOption(i);
             gameState.currentOptions[i] = word;
+            // Ensure text fits after insertion
+            const span = button.querySelector('span');
+            if (span) { fitTextToButton(button, span); }
         } else {
             button.innerHTML = `
                 <span>---</span>
@@ -1292,6 +2056,14 @@ function positionCharacterContainers() {
             container.style.zIndex = '100';
             container.style.pointerEvents = 'auto'; // Ensure clicks work on active character
             gameState.activeWordIndex = 0;
+            
+            // Give active container extra width for longer characters
+            const word = gameState.charactersOnScreen[index]?.word;
+            if (word) {
+                const chineseText = getChineseChar(word);
+                const activeWidth = Math.max(150, chineseText.length * 40 + 55);
+                container.style.width = `${activeWidth}px`;
+            }
         } else if (index <= 2) {
             container.classList.add('next');
             container.style.transform = isMobile ? 
@@ -1299,6 +2071,14 @@ function positionCharacterContainers() {
                 'translateX(-50%) scale(1.0)';
             container.style.zIndex = '5';
             container.style.pointerEvents = 'none'; // Prevent interference with active character clicks
+            
+            // Give next containers adequate width for longer characters
+            const word = gameState.charactersOnScreen[index]?.word;
+            if (word) {
+                const chineseText = getChineseChar(word);
+                const nextWidth = Math.max(140, chineseText.length * 38 + 50);
+                container.style.width = `${nextWidth}px`;
+            }
         } else {
             container.classList.add('upcoming');
             container.style.transform = isMobile ? 
@@ -1312,37 +2092,45 @@ function positionCharacterContainers() {
     // Position mascot to the RIGHT of active character (fixed positioning relative to viewport)
     const mascotContainer = document.getElementById('mascotContainer');
     if (mascotContainer && gameState.charactersOnScreen.length > 0) {
-        const activeContainer = gameState.charactersOnScreen[0];
-        const activeWidth = activeContainer.width;
-        
-        // Calculate responsive mascot width based on viewport height (matches CSS clamp)
-        const viewportHeight = window.innerHeight;
-        const mascotWidth = Math.max(150, Math.min(220, viewportHeight * 0.20)); // 20vh with clamps
-        
-        // Get character row element for vertical positioning
-        const charactersRow = document.getElementById('charactersRow');
-        const rowRect = charactersRow.getBoundingClientRect();
-        
-        let mascotDistance;
-        if (isMobile) {
-            const activeScaledWidth = activeWidth * 1.1;
-            const mascotScaledWidth = mascotWidth * 1.1;
-            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 35; // Much closer, allowing overlap
-        } else {
-            const activeScaledWidth = activeWidth * 1.3;
-            const mascotScaledWidth = mascotWidth * 1.3;
-            mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 40; // Much closer, allowing overlap
-        }
-        
-        // Position relative to page (absolute positioning)
-        const activePos = screenCenter;
-        const mascotPosX = activePos + mascotDistance;
-        const mascotPosY = charactersRow.offsetTop + (charactersRow.offsetHeight / 2) - 130; // Much higher up (top can be cut off)
-        
-        mascotContainer.style.left = `${mascotPosX}px`;
-        mascotContainer.style.top = `${mascotPosY}px`;
-        mascotContainer.style.transform = 'translate(-50%, -50%)'; // Center the mascot on its position
-        // z-index is handled by CSS (0 - behind all characters)
+        // Use a small delay to ensure DOM measurements are accurate
+        setTimeout(() => {
+            const activeContainer = gameState.charactersOnScreen[0];
+            const activeWidth = activeContainer.width;
+            
+            // Calculate responsive mascot width based on viewport height (matches CSS clamp)
+            const viewportHeight = window.innerHeight;
+            const mascotWidth = Math.max(150, Math.min(220, viewportHeight * 0.20)); // 20vh with clamps
+            
+            // Get character row element for vertical positioning
+            const charactersRow = document.getElementById('charactersRow');
+            const rowRect = charactersRow.getBoundingClientRect();
+            
+            let mascotDistance;
+            if (isMobile) {
+                const activeScaledWidth = activeWidth * 1.1;
+                const mascotScaledWidth = mascotWidth * 1.1;
+                mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 35; // Much closer, allowing overlap
+            } else {
+                const activeScaledWidth = activeWidth * 1.3;
+                const mascotScaledWidth = mascotWidth * 1.3;
+                mascotDistance = (activeScaledWidth / 2) + (mascotScaledWidth / 2) - 40; // Much closer, allowing overlap
+            }
+            
+            // Position relative to page (absolute positioning)
+            const activePos = screenCenter;
+            const mascotPosX = activePos + mascotDistance;
+            // Use getBoundingClientRect for more reliable measurements, with fallback to offsetTop
+            const mascotPosY = (rowRect.top > 0 ? rowRect.top : charactersRow.offsetTop) + (rowRect.height > 0 ? rowRect.height : charactersRow.offsetHeight) / 2 - 130;
+            
+            // Explicitly set position to override any conflicting CSS
+            mascotContainer.style.position = 'absolute';
+            mascotContainer.style.left = `${mascotPosX}px`;
+            mascotContainer.style.top = `${mascotPosY}px`;
+            mascotContainer.style.transform = 'translate(-50%, -50%)'; // Center the mascot on its position
+            mascotContainer.style.zIndex = '0'; // Behind all characters
+            // Remove any conflicting classes that might have position: fixed
+            mascotContainer.classList.remove('mascot-icon');
+        }, 50); // Small delay to ensure layout is complete
     }
     
     // Set up click handler for the new active character
@@ -1403,11 +2191,11 @@ function removeActiveCharacterAndAdvance() {
         container.className = 'character-container upcoming';
         container.innerHTML = `
             <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
-            <div class="chinese-char">${getChineseChar(word)}</div>
+            ${createChineseCharElement(word)}
         `;
         
         const chineseText = getChineseChar(word);
-        const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+        const estimatedWidth = Math.max(130, chineseText.length * 35 + 45);
         container.style.width = `${estimatedWidth}px`;
         
         const charactersRow = document.getElementById('charactersRow');
@@ -1428,35 +2216,47 @@ function openSettings() {
     const modal = document.getElementById('settingsModal');
     const settingsContainer = document.getElementById('hotkeySettings');
     
-    // Clear and rebuild hotkey settings in numpad layout
-    settingsContainer.innerHTML = '';
-    
-    // Numpad layout order: 7,8,9,4,5,6,1,2,3,0
-    const numpadOrder = [6, 7, 8, 3, 4, 5, 0, 1, 2, 9]; // Map to hotkey array indices
-    
-    numpadOrder.forEach((index) => {
-        const button = document.createElement('div');
-        button.className = 'hotkey-btn';
-        button.textContent = gameState.hotkeys[index];
-        button.setAttribute('data-index', index); // Important: set data attribute
-        button.tabIndex = 0; // Make it focusable
+    // Only rebuild hotkey settings if not on mobile
+    if (settingsContainer && !window.Capacitor?.isNativePlatform() && window.innerWidth > 768) {
+        // Clear and rebuild hotkey settings in numpad layout
+        settingsContainer.innerHTML = '';
         
-        // Add click listener
-        button.addEventListener('click', () => startListening(index));
+        // FIXED: Correct numpad layout order to match physical numpad
+        // Visual layout:  7 8 9  (indices 0,1,2)
+        //                 4 5 6  (indices 3,4,5)
+        //                 1 2 3  (indices 6,7,8)
+        //                   0    (index  9)
+        const numpadOrder = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9];
         
-        // Add keyboard listener for when button is focused
-        button.addEventListener('keydown', (e) => {
-            e.preventDefault();
-            if (listeningForInput === index) {
-                updateHotkey(index, e.key);
-            }
+        numpadOrder.forEach((index) => {
+            const button = document.createElement('div');
+            button.className = 'hotkey-btn';
+            button.textContent = gameState.hotkeys[index];
+            button.setAttribute('data-index', index); // Important: set data attribute
+            button.tabIndex = 0; // Make it focusable
+            
+            // Add click listener
+            button.addEventListener('click', () => startListening(index));
+            
+            // Add keyboard listener for when button is focused
+            button.addEventListener('keydown', (e) => {
+                e.preventDefault();
+                if (listeningForInput === index) {
+                    updateHotkey(index, e.key);
+                }
+            });
+            
+            settingsContainer.appendChild(button);
         });
-        
-        settingsContainer.appendChild(button);
-    });
+    }
     
     updateSettingsToggles();
     modal.style.display = 'block';
+    
+    // Ensure modal is properly positioned on mobile
+    if (window.Capacitor?.isNativePlatform() || window.innerWidth <= 768) {
+        modal.style.paddingTop = 'env(safe-area-inset-top, 0px)';
+    }
 }
 
 function closeSettings() {
@@ -1486,6 +2286,9 @@ function updateExistingOptionsGrid() {
             
             if (span) span.textContent = displayText;
             if (hotkeyDiv) hotkeyDiv.textContent = gameState.hotkeys[index];
+            
+            // Apply adaptive text sizing after content change
+            applyAdaptiveTextSize(button);
             
             // Update progress display
             const progressCount = button.querySelector('.progress-count');
@@ -1587,7 +2390,7 @@ function updateAudioHotkey(newKey) {
         }
         
         listeningForInput = -1;
-        console.log('Audio hotkey updated to:', displayKey);
+        // DEBUG: 'Audio hotkey updated to:', displayKey);
     }
 }
 
@@ -1602,7 +2405,7 @@ function setupKeyboardListeners() {
     }
     
     // Create new handler
-    gameKeydownHandler = (event) => {
+    gameKeydownHandler = async (event) => {
         // Check if we're listening for hotkey input in settings
         if (listeningForInput !== -1) {
             event.preventDefault();
@@ -1644,7 +2447,7 @@ function setupKeyboardListeners() {
             
             if (optionIndex !== -1) {
                 event.preventDefault();
-                selectOption(optionIndex);
+                await selectOption(optionIndex);
             }
         }
     };
@@ -1678,6 +2481,13 @@ function updateOptionButton(optionIndex, word, progress) {
     if (progressCount) {
         progressCount.textContent = `${progress.count}/${gameState.tierRequirement}`;
     }
+    
+    // Update checkmark
+    updateCheckmarkForButton(button, word);
+
+    // Ensure text fits
+    const span = button.querySelector('span');
+    if (span) { fitTextToButton(button, span); }
 }
 
 // Star Animation System
@@ -1724,7 +2534,24 @@ function addNewWordToRotation(completedWord, optionIndex) {
     
     // Add a new word if available
     if (availableWords.length > 0) {
-        const newWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+        const newWord = randomizeWords
+            ? availableWords[Math.floor(Math.random() * availableWords.length)]
+            : (function() {
+                // Sequential: pick next from selectedWords not in currentWords and not completed
+                const total = gameState.selectedWords.length;
+                for (let step = 0; step < total; step++) {
+                    const idx = (gameState.nextWordIndex + step) % total;
+                    const candidate = gameState.selectedWords[idx];
+                    const notInCurrent = !gameState.currentWords.some(w => w.chinese === candidate.chinese);
+                    const notCompleted = gameState.wordProgress[candidate.chinese].count < gameState.tierRequirement * 3;
+                    if (notInCurrent && notCompleted) {
+                        gameState.nextWordIndex = (idx + 1) % total;
+                        return candidate;
+                    }
+                }
+                // fallback to first available if sequential search fails
+                return availableWords[0];
+            })();
         gameState.currentWords.push(newWord);
         
         // Replace the specific option button with new word
@@ -1746,6 +2573,15 @@ function addNewWordToRotation(completedWord, optionIndex) {
             </div>
             <div class="hotkey">${gameState.hotkeys[optionIndex]}</div>
         `;
+        
+        // Apply adaptive text sizing
+        applyAdaptiveTextSize(button);
+        
+        // Add checkmark
+        updateCheckmarkForButton(button, newWord);
+        // Fit text
+        const span = button.querySelector('span');
+        if (span) { fitTextToButton(button, span); }
         
         setTimeout(() => button.classList.remove('new-word-entry'), 800);
     } else {
@@ -1778,16 +2614,19 @@ function removeCompletedWordFromCharacters(completedWordChinese) {
     
     // Replenish character row
     while (gameState.charactersOnScreen.length < 8) {
-        const word = getRandomCurrentWord();
+        const word = randomizeWords ? getRandomCurrentWord() : (function() {
+            // Sequentially prefer the left-most in currentWords not already over-represented
+            return gameState.currentWords[(gameState.charactersOnScreen.length) % gameState.currentWords.length];
+        })();
         const container = document.createElement('div');
         container.className = 'character-container upcoming';
         container.innerHTML = `
             <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
-            <div class="chinese-char">${getChineseChar(word)}</div>
+            ${createChineseCharElement(word)}
         `;
         
         const chineseText = getChineseChar(word);
-        const estimatedWidth = Math.max(120, chineseText.length * 30 + 40);
+        const estimatedWidth = Math.max(130, chineseText.length * 35 + 45);
         container.style.width = `${estimatedWidth}px`;
         
         const charactersRow = document.getElementById('charactersRow');
@@ -1804,7 +2643,7 @@ function removeCompletedWordFromCharacters(completedWordChinese) {
 }
 
 // Landing Page Logic
-function updateRange() {
+function updateRange(saveSettings = true) {
     const startInput = document.getElementById('startInput');
     const endInput = document.getElementById('endInput');
     const maxWords = parseInt(startInput.max);
@@ -1822,13 +2661,28 @@ function updateRange() {
     
     startInput.value = start;
     endInput.value = end;
+
+    // Only persist range if saveSettings is true (user-initiated change)
+    if (saveSettings) {
+        gameSettings.ui.rangeStart = start;
+        gameSettings.ui.rangeEnd = end;
+        console.log('Saving range settings:', { start, end, gameSettings: gameSettings.ui });
+        if (typeof window.saveSettings === 'function') {
+            window.saveSettings(gameSettings);
+            console.log('Range settings saved via Capacitor');
+        } else {
+            // Fallback to localStorage for web
+            localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+            console.log('Range settings saved via localStorage');
+        }
+    }
     
     const totalSelected = end - start + 1;
     
     // Update display values
     document.getElementById('startValue').textContent = start;
     document.getElementById('endValue').textContent = end;
-    document.getElementById('totalWords').textContent = totalSelected;
+    document.getElementById('totalWords').textContent = maxWords;
     
     // Update progress bar
     const progressFill = document.getElementById('rangeProgressFill');
@@ -1841,16 +2695,6 @@ function updateRange() {
     }
 }
 
-function toggleRandomize() {
-    randomizeWords = !randomizeWords;
-    const checkbox = document.getElementById('randomizeCheckbox');
-    
-    if (randomizeWords) {
-        checkbox.classList.add('checked');
-    } else {
-        checkbox.classList.remove('checked');
-    }
-}
 
 // Game Start System
 function startGame() {
@@ -1873,8 +2717,17 @@ function startGame() {
     
     // Get tier requirement from landing page
     gameState.tierRequirement = parseInt(document.getElementById('landingTierRequirement').value);
+    gameSettings.ui.tierRequirement = gameState.tierRequirement;
     
     // Select words for the game
+    // Persist landing selections
+    gameSettings.ui.band = currentBand;
+    gameSettings.ui.rangeStart = startIndex;
+    gameSettings.ui.rangeEnd = endIndex;
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    }
+
     let selectedWords = hskWords.slice(startIndex - 1, endIndex);
     
     // Randomize if option is selected
@@ -1884,6 +2737,7 @@ function startGame() {
     
     gameState.selectedWords = selectedWords;
     gameState.currentWords = gameState.selectedWords.slice(0, Math.min(10, gameState.selectedWords.length));
+    gameState.nextWordIndex = gameState.currentWords.length;
     
     // Initialize word progress
     gameState.wordProgress = {};
@@ -1911,6 +2765,14 @@ function startGame() {
     document.getElementById('landingPage').style.display = 'none';
     document.getElementById('gamePage').style.display = 'flex';
     
+    // Save page state
+    savePageState('game');
+    
+    // Reset per-game Hanzi quiz completions (checkmarks)
+    if (typeof hanziQuizState !== 'undefined') {
+        hanziQuizState.completedCharacters = new Set();
+    }
+    
     // Initialize game
     initializeGame();
 }
@@ -1925,79 +2787,170 @@ function shuffleArray(array) {
 }
 
 // Save current game state for resume functionality
-function saveGameState() {
-    savedGameState = {
-        selectedWords: [...gameState.selectedWords],
-        currentWords: [...gameState.currentWords],
-        activeWordIndex: gameState.activeWordIndex,
-        wordProgress: JSON.parse(JSON.stringify(gameState.wordProgress)),
-        starsEarned: gameState.starsEarned,
-        completedWords: gameState.completedWords,
-        streakCount: gameState.streakCount,
-        lastAnswerTime: gameState.lastAnswerTime,
-        alreadyPenalized: gameState.alreadyPenalized,
-        tierRequirement: gameState.tierRequirement,
-        hotkeys: [...gameState.hotkeys],
-        audioHotkey: gameState.audioHotkey,
-        easyMode: gameState.easyMode,
-        // Save additional game settings
-        gameSettings: JSON.parse(JSON.stringify(gameSettings)),
-        currentBand: currentBand,
-        useTraditional: useTraditional
-    };
-    console.log('Game state saved for resume');
+async function saveCurrentGameState() {
+    // Save current game state for resume functionality
+    try {
+        const stateToSave = {
+            selectedWords: gameState.selectedWords,
+            currentWords: gameState.currentWords,
+            wordProgress: gameState.wordProgress,
+            starsEarned: gameState.starsEarned,
+            completedWords: gameState.completedWords,
+            activeWordIndex: gameState.activeWordIndex,
+            tierRequirement: gameState.tierRequirement,
+            band: currentBand,
+            randomize: randomizeWords
+        };
+        
+        console.log('Attempting to save game state:', stateToSave);
+        if (typeof window.saveGameState === 'function') {
+            console.log('Using Capacitor saveGameState function');
+            await window.saveGameState(stateToSave);
+        } else {
+            console.log('Capacitor not available, using localStorage fallback');
+            localStorage.setItem('savedGameState', JSON.stringify(stateToSave));
+        }
+        console.log('Game state saved successfully');
+    } catch (error) {
+        console.error('Failed to save game state:', error);
+        // Additional fallback
+        try {
+            localStorage.setItem('savedGameState', JSON.stringify(stateToSave));
+            console.log('Used localStorage as final fallback');
+        } catch (fallbackError) {
+            console.error('All save methods failed:', fallbackError);
+        }
+    }
 }
 
 // Resume game from saved state
-function resumeGame() {
-    if (!savedGameState) {
-        console.error('No saved game state to resume');
-        return false;
+async function resumeGame() {
+    // Resume game from saved state
+    try {
+        console.log('Resume game called');
+        let savedState = null;
+        
+        if (typeof window.loadGameState === 'function') {
+            console.log('Using Capacitor loadGameState function');
+            savedState = await window.loadGameState();
+            console.log('Loaded state from Capacitor:', savedState);
+        } else {
+            console.log('Capacitor not available, using localStorage');
+            const saved = localStorage.getItem('savedGameState');
+            if (saved) {
+                savedState = JSON.parse(saved);
+                console.log('Loaded state from localStorage:', savedState);
+            } else {
+                console.log('No saved state in localStorage');
+            }
+        }
+        
+        if (savedState && savedState.selectedWords && savedState.selectedWords.length > 0) {
+            console.log('Restoring game state...');
+            // Restore game state
+            gameState.selectedWords = savedState.selectedWords;
+            gameState.currentWords = savedState.currentWords || [];
+            gameState.wordProgress = savedState.wordProgress || {};
+            gameState.starsEarned = savedState.starsEarned || 0;
+            gameState.completedWords = savedState.completedWords || 0;
+            gameState.activeWordIndex = savedState.activeWordIndex || 0;
+            gameState.tierRequirement = savedState.tierRequirement || 3;
+            currentBand = savedState.band || 1;
+            randomizeWords = savedState.randomize || false;
+            
+            // Update UI
+            document.getElementById('totalStarsCount').textContent = gameState.selectedWords.length;
+            document.getElementById('starsCount').textContent = gameState.starsEarned;
+            
+            // Switch to game page
+            document.getElementById('landingPage').style.display = 'none';
+            document.getElementById('gamePage').style.display = 'flex';
+            
+            // Save page state
+            savePageState('game');
+            
+            // Initialize game
+            initializeGame();
+            
+            // Clear the saved state after successful resume
+            savedGameState = null;
+            const resumeButton = document.getElementById('resumeButton');
+            if (resumeButton) {
+                resumeButton.style.display = 'none';
+            }
+            
+            return true;
+        } else {
+            console.log('No valid saved state found');
+            alert('No saved game found to resume.');
+        }
+    } catch (error) {
+        console.error('Failed to resume game:', error);
+        alert('Failed to resume game. Please try starting a new game.');
     }
-    
-    console.log('Resuming saved game state');
-    
-    // Restore game state
-    gameState.selectedWords = [...savedGameState.selectedWords];
-    gameState.currentWords = [...savedGameState.currentWords];
-    gameState.activeWordIndex = savedGameState.activeWordIndex;
-    gameState.wordProgress = JSON.parse(JSON.stringify(savedGameState.wordProgress));
-    gameState.starsEarned = savedGameState.starsEarned;
-    gameState.completedWords = savedGameState.completedWords;
-    gameState.streakCount = savedGameState.streakCount;
-    gameState.lastAnswerTime = savedGameState.lastAnswerTime;
-    gameState.alreadyPenalized = savedGameState.alreadyPenalized;
-    gameState.tierRequirement = savedGameState.tierRequirement;
-    gameState.hotkeys = [...savedGameState.hotkeys];
-    gameState.audioHotkey = savedGameState.audioHotkey || ' '; // Default to space if not saved
-    gameState.easyMode = savedGameState.easyMode;
-    
-    // Restore settings
-    gameSettings = JSON.parse(JSON.stringify(savedGameState.gameSettings));
-    currentBand = savedGameState.currentBand;
-    useTraditional = savedGameState.useTraditional;
-    
-    // Update UI
-    document.getElementById('totalStarsCount').textContent = gameState.selectedWords.length;
-    document.getElementById('starsCount').textContent = gameState.starsEarned;
-    
-    // Switch to game page
-    document.getElementById('landingPage').style.display = 'none';
-    document.getElementById('gamePage').style.display = 'flex';
-    
-    // Initialize game
-    initializeGame();
-    
-    return true;
+    return false;
+}
+
+// Check for saved game and show resume button
+async function checkForSavedGame() {
+    try {
+        let savedState = null;
+        
+        // Wait for Capacitor functions to be available
+        let attempts = 0;
+        while (attempts < 20) {
+            if (window.loadGameState && window.saveGameState) {
+                break;
+            }
+            await new Promise(resolve => setTimeout(resolve, 100));
+            attempts++;
+        }
+        
+        if (typeof window.loadGameState === 'function') {
+            console.log('Using Capacitor loadGameState function');
+            savedState = await window.loadGameState();
+            console.log('Loaded state from Capacitor:', savedState);
+        } else {
+            console.log('Capacitor not available, using localStorage');
+            const saved = localStorage.getItem('savedGameState');
+            if (saved) {
+                savedState = JSON.parse(saved);
+                console.log('Loaded state from localStorage:', savedState);
+            } else {
+                console.log('No saved state in localStorage');
+            }
+        }
+        
+        const resumeButton = document.getElementById('resumeButton');
+        if (resumeButton) {
+            if (savedState && savedState.selectedWords && savedState.selectedWords.length > 0) {
+                console.log('Showing resume button - valid saved state found');
+                resumeButton.style.display = 'inline-block';
+                savedGameState = savedState;
+            } else {
+                console.log('Hiding resume button - no valid saved state');
+                resumeButton.style.display = 'none';
+                savedGameState = null;
+            }
+        } else {
+            console.log('Resume button element not found');
+        }
+    } catch (error) {
+        console.error('Failed to check for saved game:', error);
+    }
 }
 
 // Enhanced Return to Menu with Complete Cleanup
-function returnToMenu() {
-    console.log('=== RETURNING TO MENU WITH GAME STATE PRESERVATION ===');
+async function returnToMenu() {
+    // DEBUG: '=== RETURNING TO MENU WITH GAME STATE PRESERVATION ===');
     
     // Save current game state for potential resume
     if (gameState.selectedWords.length > 0) {
-        saveGameState();
+        console.log('Saving game state with words:', gameState.selectedWords.length);
+        await saveCurrentGameState();
+        console.log('Game state saved, checking for resume button visibility...');
+    } else {
+        console.log('No words to save, skipping game state save');
     }
     
     // Stop all audio and animations FIRST
@@ -2024,7 +2977,7 @@ function returnToMenu() {
         gameState.shakeInProgress = false;
         gameState.pendingCharacterAdvance = false;
     } catch (error) {
-        console.log('Audio cleanup error:', error);
+        // DEBUG: 'Audio cleanup error:', error);
     }
 
     try {
@@ -2036,15 +2989,16 @@ function returnToMenu() {
             clearTimeout(i);
         }
     } catch (error) {
-        console.log('TTS cleanup error:', error);
+        // DEBUG: 'TTS cleanup error:', error);
     }
     
     // THOROUGH DOM cleanup
     try {
         const optionsGrid = document.getElementById('optionsGrid');
         if (optionsGrid) {
-            // Preserve the voice button before cleanup
+            // Preserve the control buttons before cleanup
             const voiceButton = document.getElementById('voiceReplayBtn');
+            const hanziButton = document.getElementById('hanziQuizBtn');
             
             const buttons = optionsGrid.querySelectorAll('.option-btn');
             buttons.forEach(button => {
@@ -2060,9 +3014,12 @@ function returnToMenu() {
             });
             optionsGrid.innerHTML = '';
             
-            // Re-add the voice button after cleanup
+            // Re-add the control buttons after cleanup
             if (voiceButton) {
                 optionsGrid.appendChild(voiceButton);
+            }
+            if (hanziButton) {
+                optionsGrid.appendChild(hanziButton);
             }
         }
         
@@ -2083,7 +3040,7 @@ function returnToMenu() {
         setMascotAnimation('walk');
         gameSettings.mascot.lastInteraction = Date.now();
     } catch (error) {
-        console.log('DOM cleanup error:', error);
+        // DEBUG: 'DOM cleanup error:', error);
     }
     
     // COMPLETE game state reset - preserve only settings
@@ -2140,19 +3097,19 @@ function returnToMenu() {
         mobileMenu.classList.remove('active');
     }
     
-    console.log('=== STATE CLEANUP COMPLETE ===');
+    // DEBUG: '=== STATE CLEANUP COMPLETE ===');
     
     // Switch to landing page
     document.getElementById('gamePage').style.display = 'none';
     document.getElementById('landingPage').style.display = 'flex';
     
-    // Show resume button if we have a saved game
-    const resumeButton = document.getElementById('resumeButton');
-    if (savedGameState && resumeButton) {
-        resumeButton.style.display = 'inline-block';
-    }
+    // Save page state
+    savePageState('landing');
     
-    console.log('=== RETURNED TO MENU SUCCESSFULLY ===');
+    // Check for saved game and show resume button if available
+    await checkForSavedGame();
+    
+    // DEBUG: '=== RETURNED TO MENU SUCCESSFULLY ===');
 }
 
 // Band Selection
@@ -2184,6 +3141,14 @@ async function changeBand() {
     
     if (success) {
         currentBand = selectedBand;
+        // Persist band selection
+        gameSettings.ui.band = currentBand;
+        if (typeof window.saveSettings === 'function') {
+            window.saveSettings(gameSettings);
+        } else {
+            // Fallback to localStorage for web
+            localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
+        }
     } else {
         // Reset selector if loading failed
         bandSelector.value = currentBand;
@@ -2198,9 +3163,97 @@ async function changeBand() {
 }
 // App Initialization
 async function initializeApp() {
-    // Load Band 1 by default
-    await loadHSKWords(1);
-    updateRange();
+    // Wait for TTS helper to initialize first (it loads settings)
+    let attempts = 0;
+    const maxAttempts = 50;
+    
+    while (attempts < maxAttempts) {
+        if (window.loadSettings && window.saveSettings) {
+            break;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+        attempts++;
+    }
+    
+    // Load saved settings first
+    try {
+        let savedSettings = null;
+        if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+            if (typeof window.loadSettings === 'function') {
+                savedSettings = await window.loadSettings();
+            }
+        } else {
+            const saved = localStorage.getItem('gameSettings');
+            if (saved) {
+                savedSettings = JSON.parse(saved);
+            }
+        }
+        
+        if (savedSettings) {
+            Object.assign(gameSettings, savedSettings);
+            console.log('Loaded settings:', savedSettings);
+            
+            // Sync gameState with loaded settings
+            gameState.easyMode = gameSettings.ui.easyMode;
+            useTraditional = gameSettings.ui.traditional;
+            
+            // Ensure app state exists
+            if (!gameSettings.app) {
+                gameSettings.app = { currentPage: 'landing', hasPlayedBefore: false };
+            }
+        }
+    } catch (error) {
+        console.error('Failed to load settings:', error);
+    }
+    
+    // Initialize StatusBar for edge-to-edge display
+    if (window.Capacitor && window.Capacitor.isNativePlatform()) {
+        try {
+            const { StatusBar } = await import('@capacitor/status-bar');
+            await StatusBar.setOverlaysWebView({ overlay: true });
+            await StatusBar.setBackgroundColor({ color: '#797d62' });
+            await StatusBar.setStyle({ style: 'light' });
+        } catch (error) {
+            console.log('StatusBar not available:', error);
+        }
+    }
+    
+    // Wait a bit for DOM to be fully ready, then initialize UI
+    setTimeout(async () => {
+        // Load band from settings if available
+        const savedBand = Number.isFinite(gameSettings.ui.band) ? gameSettings.ui.band : 1;
+        await loadHSKWords(savedBand);
+        currentBand = savedBand;
+        
+        // Initialize landing controls from saved settings
+        const bandSelector = document.getElementById('bandSelector');
+        if (bandSelector) bandSelector.value = String(savedBand);
+        if (Number.isFinite(gameSettings.ui.rangeStart)) {
+            const startInput = document.getElementById('startInput');
+            if (startInput) {
+                startInput.value = String(gameSettings.ui.rangeStart);
+                console.log('Set startInput to:', gameSettings.ui.rangeStart);
+            }
+        }
+        if (Number.isFinite(gameSettings.ui.rangeEnd)) {
+            const endInput = document.getElementById('endInput');
+            if (endInput) {
+                endInput.value = String(gameSettings.ui.rangeEnd);
+                console.log('Set endInput to:', gameSettings.ui.rangeEnd);
+            }
+        }
+        // Sync all UI toggles/sliders/dropdowns
+        updateSettingsToggles();
+        // Recompute range visuals (don't save during initialization)
+        updateRange(false);
+        
+        // Initialize app completely behind native loading overlay
+        console.log('Starting native app initialization...');
+        // Add delay to ensure Capacitor functions are fully loaded  
+        setTimeout(async () => {
+            await initializeAppCompletely();
+        }, 500);
+    }, 100);
     
     // Initialize audio systems
     initializeBackgroundMusic();
@@ -2211,7 +3264,7 @@ async function initializeApp() {
         clickAudio = new Audio('Sounds/click.mp3');
         clickAudio.preload = 'auto';
     } catch (error) {
-        console.log('Failed to preload click audio:', error);
+        // DEBUG: 'Failed to preload click audio:', error);
     }
     // Periodic TTS system refresh for mobile stability
     setInterval(() => {
@@ -2229,8 +3282,11 @@ async function initializeApp() {
     
     // Add window resize listener for responsive character and mascot positioning
     window.addEventListener('resize', handleWindowResize);
+    
+    // Initialize hanzi quiz system
+    loadCompletedQuizzes();
 
-    console.log('App initialized with enhanced audio and UI support');
+    // DEBUG: 'App initialized with enhanced audio and UI support');
 }
 
 // Throttle resize events to prevent excessive repositioning
@@ -2248,16 +3304,588 @@ function handleWindowResize() {
         }
         
         resizeTimeout = setTimeout(() => {
-            console.log('Window resized, repositioning characters and mascot');
+            // DEBUG: 'Window resized, repositioning characters and mascot');
             positionCharacterContainers();
             setupActiveCharacterClickHandler(); // Ensure click handlers are still working
+            
+            // Reapply adaptive text sizing to all option buttons after resize
+            const optionButtons = document.querySelectorAll('.option-btn');
+            optionButtons.forEach(button => {
+                applyAdaptiveTextSize(button);
+            });
+            
             resizeTimeout = null;
         }, 150); // 150ms throttle for smooth performance
     }
 }
 
-// Initialize range values on page load
-updateRange();
+// Initialize range values on page load (don't save during initial load)
+updateRange(false);
 
 // Load default wordlist when page loads
 window.addEventListener('DOMContentLoaded', initializeApp);
+
+// Hanzi Quiz System
+let hanziQuizState = {
+    writer: null,
+    currentCharacter: null,
+    quizCompleted: false,
+    completedCharacters: new Set(), // Track completed character quizzes
+    autoPopupPending: false,
+    currentQuizWord: null,
+    remainingChars: [],
+    currentCharIndex: 0
+};
+
+function openHanziQuiz() {
+    // Get the currently active character
+    const activeCharacter = getCurrentActiveCharacter();
+    if (!activeCharacter) {
+        return;
+    }
+    
+    hanziQuizState.currentQuizWord = activeCharacter;
+    hanziQuizState.autoPopupPending = false;
+    
+    showHanziQuizModal(activeCharacter);
+}
+
+function getCurrentActiveCharacter() {
+    // Find the active character from the characters on screen
+    const activeContainer = document.querySelector('.character-container.active');
+    if (!activeContainer) return null;
+    
+    const chineseChar = activeContainer.querySelector('.chinese-char');
+    if (!chineseChar) return null;
+    
+    const currentCharacterText = chineseChar.textContent.trim();
+    
+    // Find the word object that matches this character
+    for (const word of gameState.currentWords) {
+        const displayChar = gameSettings.ui.traditional ? word.traditional : word.chinese;
+        if (displayChar === currentCharacterText) {
+            return word;
+        }
+    }
+    
+    return null;
+}
+
+function showHanziQuizModal(word) {
+    const modal = document.getElementById('hanziQuizModal');
+    const characterInfo = document.getElementById('hanziQuizCharacter');
+    const writingArea = document.getElementById('hanziWritingArea');
+    
+    // Display character information
+    const displayChar = gameSettings.ui.traditional ? word.traditional : word.chinese;
+    characterInfo.innerHTML = `
+        <div style="font-size: 2rem; margin-bottom: 10px;">${displayChar}</div>
+        <div style="font-size: 1rem; color: var(--beaver);">${word.pinyin}</div>
+        <div style="font-size: 0.9rem; color: var(--reseda-green);">${word.english}</div>
+    `;
+    
+    // Clear and setup writing area
+    writingArea.innerHTML = '';
+    
+    // Prepare multi-character sequencing
+    hanziQuizState.remainingChars = Array.from(displayChar).filter(ch => ch.trim().length > 0);
+    hanziQuizState.currentCharIndex = 0;
+    const firstChar = hanziQuizState.remainingChars[0];
+    hanziQuizState.currentCharacter = firstChar;
+    
+    // Create HanziWriter instance
+    try {
+        hanziQuizState.writer = HanziWriter.create('hanziWritingArea', firstChar, {
+            width: 280,
+            height: 280,
+            padding: 20,
+            renderer: 'canvas', // Use canvas renderer for better mobile touch support
+            strokeAnimationSpeed: 1,
+            strokeHighlightSpeed: 2,
+            delayBetweenStrokes: 100,
+            // Always draw on top of outline, never cover strokes
+            showOutline: true,
+            showCharacter: false, // keep character hidden to avoid obscuring strokes
+            drawingColor: '#2c3e50',
+            strokeColor: '#34495e',
+            radicalColor: '#da5b30',
+            highlightColor: '#e74c3c',
+            drawingWidth: 3
+        });
+        
+        // Initialize Toggle button to match current outline state (outline is shown by default)
+        const toggleBtn = document.getElementById('characterToggleBtn');
+        if (toggleBtn) {
+            toggleBtn.classList.add('showing');
+            toggleBtn.textContent = 'Hide Outline';
+        }
+
+        // Start the quiz with proper callbacks and mobile-friendly settings
+        hanziQuizState.writer.quiz({
+            showHintAfterMisses: 1, // Show hint after 1 mistake
+            acceptBackwardsStrokes: false,
+            onComplete: function() {
+                // Mark this character completed, then move to next if any
+                if (hanziQuizState.currentCharacter) {
+                    markCharacterQuizCompleted(hanziQuizState.currentCharacter);
+                }
+                hanziQuizState.currentCharIndex++;
+                if (hanziQuizState.currentCharIndex < hanziQuizState.remainingChars.length) {
+                    const nextChar = hanziQuizState.remainingChars[hanziQuizState.currentCharIndex];
+                    startSequentialCharQuiz(nextChar, word);
+                } else {
+                    hanziQuizState.quizCompleted = true;
+                    showQuizSuccessMessage();
+                    setTimeout(async () => { await closeHanziQuiz(); }, 1200);
+                }
+            },
+            onCorrectStroke: function(strokeData) {
+                console.log('Correct stroke!', strokeData);
+            },
+            onMistake: function(strokeData) {
+                // Visual feedback for mistakes
+                const writingArea = document.getElementById('hanziWritingArea');
+                if (writingArea) {
+                    writingArea.style.backgroundColor = '#ffeeee';
+                    setTimeout(() => {
+                        writingArea.style.backgroundColor = 'white';
+                    }, 300);
+                }
+                console.log('Mistake on stroke', strokeData);
+            }
+        });
+        
+        // Additional mobile touch event fix - delay to allow HanziWriter to create canvas
+        setTimeout(() => {
+            const canvas = writingArea.querySelector('canvas');
+            if (canvas) {
+                // Prevent default touch behavior that might interfere with drawing
+                canvas.addEventListener('touchstart', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+                
+                canvas.addEventListener('touchmove', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+                
+                canvas.addEventListener('touchend', function(e) {
+                    e.preventDefault();
+                }, { passive: false });
+                
+                console.log('Added touch event handlers to canvas');
+            } else {
+                console.log('Canvas not found for touch event setup');
+            }
+        }, 100);
+        
+        // Show the modal
+        modal.classList.add('active');
+        
+    } catch (error) {
+        console.error('Failed to create HanziWriter:', error);
+        alert('Unable to load character data. Please try again.');
+    }
+}
+
+// Start quiz for the next character in a multi-character word sequence
+function startSequentialCharQuiz(char, word) {
+    try {
+        const writingArea = document.getElementById('hanziWritingArea');
+        const characterInfo = document.getElementById('hanziQuizCharacter');
+        if (!writingArea) return;
+        writingArea.innerHTML = '';
+        hanziQuizState.currentCharacter = char;
+
+        if (characterInfo && word) {
+            characterInfo.innerHTML = `
+                <div style="font-size: 2rem; margin-bottom: 10px;">${char}</div>
+                <div style="font-size: 1rem; color: var(--beaver);">${word.pinyin}</div>
+                <div style="font-size: 0.9rem; color: var(--reseda-green);">${word.english}</div>
+            `;
+        }
+
+        hanziQuizState.writer = HanziWriter.create('hanziWritingArea', char, {
+            width: 280,
+            height: 280,
+            padding: 20,
+            renderer: 'canvas',
+            strokeAnimationSpeed: 1,
+            strokeHighlightSpeed: 2,
+            delayBetweenStrokes: 100,
+            showOutline: true,
+            showCharacter: false,
+            drawingColor: '#2c3e50',
+            strokeColor: '#34495e',
+            radicalColor: '#da5b30',
+            highlightColor: '#e74c3c',
+            drawingWidth: 3
+        });
+
+        const toggleBtn = document.getElementById('characterToggleBtn');
+        if (toggleBtn) { toggleBtn.classList.add('showing'); toggleBtn.textContent = 'Hide Outline'; }
+
+        hanziQuizState.writer.quiz({
+            showHintAfterMisses: 1,
+            acceptBackwardsStrokes: false,
+            onComplete: function() {
+                if (hanziQuizState.currentCharacter) {
+                    markCharacterQuizCompleted(hanziQuizState.currentCharacter);
+                }
+                hanziQuizState.currentCharIndex++;
+                if (hanziQuizState.currentCharIndex < hanziQuizState.remainingChars.length) {
+                    const nextChar = hanziQuizState.remainingChars[hanziQuizState.currentCharIndex];
+                    startSequentialCharQuiz(nextChar, word);
+                } else {
+                    hanziQuizState.quizCompleted = true;
+                    showQuizSuccessMessage();
+                    setTimeout(async () => { await closeHanziQuiz(); }, 1200);
+                }
+            },
+            onCorrectStroke: function(strokeData) { console.log('Correct stroke!', strokeData); },
+            onMistake: function(strokeData) {
+                const wa = document.getElementById('hanziWritingArea');
+                if (wa) { wa.style.backgroundColor = '#ffeeee'; setTimeout(() => { wa.style.backgroundColor = 'white'; }, 300); }
+                console.log('Mistake on stroke', strokeData);
+            }
+        });
+    } catch (e) {
+        console.error('Failed to start sequential quiz:', e);
+    }
+}
+
+function showQuizSuccessMessage() {
+    // Add a small corner badge inside the writing area; do not replace controls
+    try {
+        const writingArea = document.getElementById('hanziWritingArea');
+        if (writingArea) {
+            const existing = writingArea.querySelector('.quiz-success-badge');
+            if (existing) existing.remove();
+            const badge = document.createElement('div');
+            badge.className = 'quiz-success-badge';
+            badge.textContent = '✓';
+            badge.style.position = 'absolute';
+            badge.style.right = '8px';
+            badge.style.top = '8px';
+            badge.style.width = '22px';
+            badge.style.height = '22px';
+            badge.style.borderRadius = '50%';
+            badge.style.background = 'linear-gradient(145deg, #4CAF50, #45a049)';
+            badge.style.color = '#fff';
+            badge.style.fontWeight = 'bold';
+            badge.style.display = 'flex';
+            badge.style.alignItems = 'center';
+            badge.style.justifyContent = 'center';
+            writingArea.appendChild(badge);
+        }
+    } catch (_) {}
+    playSound('complete');
+}
+
+async function closeHanziQuiz() {
+    // If writing is required and this quiz was auto-prompted for star, but not completed,
+    // confirm with the user whether to award the star anyway or continue writing.
+    if (gameSettings.ui.writingRequired && hanziQuizState.autoPopupPending && !hanziQuizState.quizCompleted && hanziQuizState.currentQuizWord) {
+        const confirmExit = confirm('You have not finished the writing practice. Exit and award the star anyway?');
+        if (!confirmExit) {
+            // Stay in the quiz
+            return;
+        }
+        // Award star without completing the quiz
+        hanziQuizState.quizCompleted = true;
+    }
+
+    const modal = document.getElementById('hanziQuizModal');
+    modal.classList.remove('active');
+    
+    // Clean up HanziWriter instance
+    if (hanziQuizState.writer) {
+        hanziQuizState.writer = null;
+    }
+    
+    // Update checkmarks on option buttons
+    updateAllCheckmarks();
+    
+    // Handle auto-popup case - continue with star progression
+    if (hanziQuizState.autoPopupPending && hanziQuizState.quizCompleted && hanziQuizState.currentQuizWord) {
+        const word = hanziQuizState.currentQuizWord;
+        
+        // Find the button for this word and trigger star progression
+        const optionIndex = gameState.currentOptions.findIndex(opt => opt && opt.chinese === word.chinese);
+        if (optionIndex !== -1) {
+            const button = gameState.optionButtons[optionIndex];
+            
+            // Award star now that quiz is completed
+            createStarAnimation(button);
+            playStarShootAnimation();
+            playSound('starShoot');
+            queueMascotAnimation('celebrate');
+            
+            gameState.starsEarned++;
+            gameState.completedWords++;
+            updateUI();
+            
+            if (gameState.completedWords === gameState.selectedWords.length) {
+                setTimeout(() => {
+                    alert('Congratulations! You completed all words!');
+                    // Clear the saved game state since game is completed
+                    clearSavedGameState();
+                    // Return to landing page
+                    returnToMenu();
+                }, 1000);
+            } else {
+                // Continue with normal game flow
+                removeActiveCharacterOnly();
+                addNewWordToRotation(word, optionIndex);
+                
+                // Save game state after character advancement
+                await saveCurrentGameState();
+            }
+        }
+    }
+    
+    // Reset quiz state
+    hanziQuizState.quizCompleted = false;
+    hanziQuizState.currentCharacter = null;
+    hanziQuizState.currentQuizWord = null;
+    hanziQuizState.autoPopupPending = false;
+}
+
+function showHanziHint() {
+    if (hanziQuizState.writer) {
+        hanziQuizState.writer.showCharacter();
+        setTimeout(() => {
+            hanziQuizState.writer.hideCharacter();
+        }, 2000);
+    }
+}
+
+function restartHanziQuiz() {
+    if (hanziQuizState.writer) {
+        // Cancel current quiz if running
+        try { hanziQuizState.writer.cancelQuiz && hanziQuizState.writer.cancelQuiz(); } catch(_) {}
+        
+        // Reset quiz state
+        hanziQuizState.quizCompleted = false;
+
+        // Safer re-init: recreate the writer to avoid API differences
+        const writingArea = document.getElementById('hanziWritingArea');
+        if (writingArea) {
+            writingArea.innerHTML = '';
+            try {
+                hanziQuizState.writer = HanziWriter.create('hanziWritingArea', hanziQuizState.currentCharacter, {
+                    width: 280,
+                    height: 280,
+                    padding: 20,
+                    renderer: 'canvas',
+                    strokeAnimationSpeed: 1,
+                    strokeHighlightSpeed: 2,
+                    delayBetweenStrokes: 100,
+                    showOutline: true,
+                    showCharacter: false,
+                    drawingColor: '#2c3e50',
+                    strokeColor: '#34495e',
+                    radicalColor: '#da5b30',
+                    highlightColor: '#e74c3c',
+                    drawingWidth: 3
+                });
+            } catch (_) {}
+        }
+
+        // Ensure toggle reflects outline shown
+        const toggleBtn = document.getElementById('characterToggleBtn');
+        if (toggleBtn) { toggleBtn.classList.add('showing'); toggleBtn.textContent = 'Hide Outline'; }
+
+        // Start a new quiz
+        hanziQuizState.writer.quiz({
+            showHintAfterMisses: 1,
+            acceptBackwardsStrokes: false,
+            onComplete: function() {
+                hanziQuizState.quizCompleted = true;
+                markCharacterQuizCompleted(hanziQuizState.currentQuizWord.chinese);
+                
+                showQuizSuccessMessage();
+                
+                setTimeout(async () => {
+                    await closeHanziQuiz();
+                }, 2000);
+            },
+            onCorrectStroke: function(strokeData) {
+                console.log('Correct stroke!', strokeData);
+            },
+            onMistake: function(strokeData) {
+                const writingArea = document.getElementById('hanziWritingArea');
+                if (writingArea) {
+                    writingArea.style.backgroundColor = '#ffeeee';
+                    setTimeout(() => {
+                        writingArea.style.backgroundColor = 'white';
+                    }, 300);
+                }
+                console.log('Mistake on stroke', strokeData);
+            }
+        });
+        
+        console.log('Hanzi quiz restarted');
+    }
+}
+
+function toggleCharacterDisplay() {
+    if (hanziQuizState.writer) {
+        const toggleBtn = document.getElementById('characterToggleBtn');
+        const isShowing = toggleBtn.classList.contains('showing');
+        
+        if (isShowing) {
+            // Hide outline only; never show full character bitmap over strokes
+            hanziQuizState.writer.hideOutline();
+            toggleBtn.classList.remove('showing');
+            toggleBtn.textContent = 'Show Outline';
+        } else {
+            hanziQuizState.writer.showOutline();
+            toggleBtn.classList.add('showing');
+            toggleBtn.textContent = 'Hide Outline';
+        }
+    }
+}
+
+function markCharacterQuizCompleted(chineseText) {
+    // Only store in session (not persistent) — for multi-char, add single characters
+    if (!chineseText) return;
+    if (chineseText.length === 1) {
+        hanziQuizState.completedCharacters.add(chineseText);
+    } else {
+        Array.from(chineseText).forEach(ch => { if (ch.trim()) hanziQuizState.completedCharacters.add(ch); });
+    }
+    
+    // Update checkmarks for all current buttons that contain this character
+    const optionsGrid = document.getElementById('optionsGrid');
+    if (optionsGrid) {
+        const buttons = optionsGrid.querySelectorAll('.option-btn');
+        buttons.forEach((button, index) => {
+            const word = gameState.currentOptions[index];
+            if (word && word.chinese === chineseText) {
+                updateCheckmarkForButton(button, word);
+            }
+        });
+    }
+}
+
+function loadCompletedQuizzes() {
+    // Reset completions for each game session
+    hanziQuizState.completedCharacters = new Set();
+}
+
+function isCharacterQuizCompleted(chineseText) {
+    if (!chineseText) return false;
+    const chars = Array.from(chineseText).filter(ch => ch.trim().length > 0);
+    if (chars.length === 0) return false;
+    if (chars.length === 1) return hanziQuizState.completedCharacters.has(chars[0]);
+    return chars.every(ch => hanziQuizState.completedCharacters.has(ch));
+}
+
+function updateAllCheckmarks() {
+    // Update checkmarks on all option buttons
+    gameState.optionButtons.forEach((button, index) => {
+        const word = gameState.currentOptions[index];
+        if (word) {
+            updateCheckmarkForButton(button, word);
+        }
+    });
+}
+
+function updateCheckmarkForButton(button, word) {
+    // Remove existing checkmark
+    const existingCheckmark = button.querySelector('.hanzi-checkmark');
+    if (existingCheckmark) {
+        existingCheckmark.remove();
+    }
+    
+    // Hide checkmarks if writing is not required
+    if (!gameSettings.ui.writingRequired) {
+        return;
+    }
+
+    // Add new checkmark
+    const checkmark = document.createElement('div');
+    checkmark.className = 'hanzi-checkmark';
+    
+    if (isCharacterQuizCompleted(word.chinese)) {
+        checkmark.classList.add('completed');
+        checkmark.textContent = '✓';
+    } else {
+        checkmark.classList.add('incomplete');
+        checkmark.textContent = '';
+    }
+    
+    // Align checkmark to the end of the progress bar fill
+    try {
+        const bar = button.querySelector('.progress-bar');
+        if (bar) {
+            const fill = button.querySelector('.progress-fill');
+            const barRect = bar.getBoundingClientRect();
+            const btnRect = button.getBoundingClientRect();
+            // Progress percent from inline style or width
+            let widthPercent = 0;
+            if (fill && fill.style.width.endsWith('%')) {
+                widthPercent = parseFloat(fill.style.width);
+            }
+            const barWidth = barRect.width;
+            const endXWithinBar = (widthPercent / 100) * barWidth; // px from bar left
+            // Convert to button-relative left coordinate and nudge left by half checkmark width
+            const leftPx = (barRect.left - btnRect.left) + endXWithinBar - 9; // 18px check size / 2
+            checkmark.style.left = `${Math.max(10, Math.min(leftPx, btnRect.width - 28))}px`;
+            checkmark.style.right = 'auto';
+            // Attach to bottom region near progress bar
+            checkmark.style.top = 'auto';
+            checkmark.style.bottom = '2px';
+        }
+    } catch (_) {}
+    
+    button.appendChild(checkmark);
+}
+
+// Modified option button creation to include checkmarks
+function createOptionButtonWithCheckmark(word, index) {
+    const button = document.createElement('button');
+    button.className = 'option-btn tier-bronze';
+    
+    if (word) {
+        const progress = gameState.wordProgress[word.chinese];
+        if (!progress) {
+            gameState.wordProgress[word.chinese] = { count: 0, tier: 'bronze' };
+        }
+        
+        const currentProgress = gameState.wordProgress[word.chinese];
+        button.className = `option-btn tier-${currentProgress.tier}`;
+        
+        const displayText = gameSettings.ui.pinyinMode ? word.pinyin : word.english;
+        
+        button.innerHTML = `
+            <span>${displayText}</span>
+            <div class="progress-count">${currentProgress.count}/${gameState.tierRequirement}</div>
+            <div class="progress-bar">
+                <div class="progress-fill" style="width: ${(currentProgress.count % gameState.tierRequirement) * (100/gameState.tierRequirement)}%"></div>
+            </div>
+            <div class="hotkey">${gameState.hotkeys[index]}</div>
+        `;
+        
+        // Apply adaptive text sizing
+        applyAdaptiveTextSize(button);
+        
+        // Add checkmark
+        updateCheckmarkForButton(button, word);
+        // Fit text
+        const span = button.querySelector('span');
+        if (span) { fitTextToButton(button, span); }
+        
+        button.onclick = async () => await selectOption(index);
+        gameState.currentOptions[index] = word;
+    } else {
+        button.innerHTML = `
+            <span>---</span>
+            <div class="hotkey">${gameState.hotkeys[index]}</div>
+        `;
+        button.style.opacity = '0.5';
+        gameState.currentOptions[index] = null;
+    }
+    
+    return button;
+}
