@@ -3,8 +3,6 @@
 
 ❗📚 Play the game online here: **https://greenants.github.io/HSK-3.0-Study-Game/** 👈
 
-> [!NOTE]  
-> When running via a mobile device, some of the functions such as the chinese pronunciations, and mascot animations can get slightly buggy - but overall it should be working fairly smoothly at this point. Running on a desktop browser seems to be the most optimal and minimal bugs.
 
 - - - -
 #### Disclaimer
