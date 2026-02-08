@@ -117,7 +117,67 @@ function getChineseChar(word) {
 function createChineseCharElement(word) {
     const chineseText = getChineseChar(word);
     const length = chineseText.length;
-    return `<div class="chinese-char" data-length="${length}">${chineseText}</div>`;
+    const coloredText = colorChineseByCharacter(chineseText, word.pinyin);
+    return `<div class="chinese-char" data-length="${length}">${coloredText}</div>`;
+}
+
+// Tone detection from pinyin
+function getToneNumber(syllable) {
+    if (!syllable) return 5;
+    
+    // Check for tone marks on vowels
+    const tone1 = /[āēīōūǖĀĒĪŌŪǕ]/;
+    const tone2 = /[áéíóúǘÁÉÍÓÚǗ]/;
+    const tone3 = /[ǎěǐǒǔǚǍĚǏǑǓǙ]/;
+    const tone4 = /[àèìòùǜÀÈÌÒÙǛ]/;
+    
+    if (tone1.test(syllable)) return 1;
+    if (tone2.test(syllable)) return 2;
+    if (tone3.test(syllable)) return 3;
+    if (tone4.test(syllable)) return 4;
+    
+    return 5; // Neutral tone
+}
+
+function getToneColor(toneNumber) {
+    const toneColors = {
+        1: '#e74c3c',  // Red (flat)
+        2: '#27ae60',  // Green (rising)
+        3: '#2980b9',  // Blue (dipping)
+        4: '#8e44ad',  // Purple (falling)
+        5: '#7f8c8d'   // Gray (neutral)
+    };
+    return toneColors[toneNumber] || toneColors[5];
+}
+
+// NEW: Color each pinyin syllable individually
+function colorPinyinBySyllable(pinyin) {
+    if (!pinyin) return '<span style="color: #7f8c8d">-</span>';
+    
+    // Split pinyin by spaces (each syllable is space-separated)
+    const syllables = pinyin.trim().split(/\s+/);
+    
+    return syllables.map(syllable => {
+        const tone = getToneNumber(syllable);
+        const color = getToneColor(tone);
+        return `<span style="color: ${color}">${syllable}</span>`;
+    }).join(' ');
+}
+
+// NEW: Color each Chinese character individually
+function colorChineseByCharacter(chineseText, pinyin) {
+    if (!chineseText) return '';
+    
+    const characters = Array.from(chineseText);
+    const syllables = pinyin ? pinyin.trim().split(/\s+/) : [];
+    
+    // Map each character to its corresponding syllable's tone
+    return characters.map((char, index) => {
+        const syllable = syllables[index] || '';
+        const tone = getToneNumber(syllable);
+        const color = getToneColor(tone);
+        return `<span style="color: ${color}">${char}</span>`;
+    }).join('');
 }
 
 // Toggle randomize word order function - defined early to avoid reference errors
@@ -1725,7 +1785,7 @@ function removeActiveCharacterOnly() {
     const container = document.createElement('div');
     container.className = 'character-container upcoming';
     container.innerHTML = `
-        <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
+        <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${colorPinyinBySyllable(word.pinyin)}</div>
         ${createChineseCharElement(word)}
     `;
     
@@ -1885,7 +1945,7 @@ function setupCharactersRow() {
         
         // Create character content with pinyin visibility control
         container.innerHTML = `
-            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
+            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${colorPinyinBySyllable(word.pinyin)}</div>
             ${createChineseCharElement(word)}
         `;
         
@@ -2184,7 +2244,7 @@ function removeActiveCharacterAndAdvance() {
         const container = document.createElement('div');
         container.className = 'character-container upcoming';
         container.innerHTML = `
-            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
+            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${colorPinyinBySyllable(word.pinyin)}</div>
             ${createChineseCharElement(word)}
         `;
         
@@ -2615,7 +2675,7 @@ function removeCompletedWordFromCharacters(completedWordChinese) {
         const container = document.createElement('div');
         container.className = 'character-container upcoming';
         container.innerHTML = `
-            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${word.pinyin}</div>
+            <div class="pinyin${gameSettings.ui.showPinyin ? '' : ' hidden'}">${colorPinyinBySyllable(word.pinyin)}</div>
             ${createChineseCharElement(word)}
         `;
         
