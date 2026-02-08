@@ -3472,6 +3472,7 @@ function showHanziQuizModal(word) {
         hanziQuizState.writer.quiz({
             showHintAfterMisses: 1, // Show hint after 1 mistake
             acceptBackwardsStrokes: false,
+            leniency: 2.0,
             onComplete: function() {
                 // Mark this character completed, then move to next if any
                 if (hanziQuizState.currentCharacter) {
@@ -3575,6 +3576,7 @@ function startSequentialCharQuiz(char, word) {
         hanziQuizState.writer.quiz({
             showHintAfterMisses: 1,
             acceptBackwardsStrokes: false,
+            leniency: 2.0,
             onComplete: function() {
                 if (hanziQuizState.currentCharacter) {
                     markCharacterQuizCompleted(hanziQuizState.currentCharacter);
@@ -3747,6 +3749,7 @@ function restartHanziQuiz() {
         hanziQuizState.writer.quiz({
             showHintAfterMisses: 1,
             acceptBackwardsStrokes: false,
+            leniency: 2.0,
             onComplete: function() {
                 hanziQuizState.quizCompleted = true;
                 markCharacterQuizCompleted(hanziQuizState.currentQuizWord.chinese);
