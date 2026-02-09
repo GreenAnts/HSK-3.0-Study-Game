@@ -176,7 +176,8 @@ function colorChineseByCharacter(chineseText, pinyin) {
         const syllable = syllables[index] || '';
         const tone = getToneNumber(syllable);
         const color = getToneColor(tone);
-        return `<span style="color: ${color}">${char}</span>`;
+        // FIX: Added class="character" so styles.css doesn't force 'Inter' font
+        return `<span class="character" style="color: ${color}">${char}</span>`;
     }).join('');
 }
 
@@ -1490,7 +1491,10 @@ function updateCharacterDisplay() {
         const chineseCharElement = char.element.querySelector('.chinese-char');
         if (chineseCharElement) {
             const chineseText = getChineseChar(char.word);
-            chineseCharElement.textContent = chineseText;
+            
+            // Use innerHTML to render the spans with class="character" and tone colors
+            chineseCharElement.innerHTML = colorChineseByCharacter(chineseText, char.word.pinyin);
+            
             chineseCharElement.setAttribute('data-length', chineseText.length);
         }
         
