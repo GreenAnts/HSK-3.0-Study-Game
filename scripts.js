@@ -1424,52 +1424,64 @@ function toggleTraditional() {
 
 function changeHanziFont() {
     const select = document.getElementById('hanziFontSelect');
-    const selectedFont = select.value;
+    if (!select) return;
     
-    console.log('Changing font to:', selectedFont);
+    const selectedFont = select.value; // opt1, opt2, or opt3
     
     // Save the setting
     gameSettings.ui.hanziFont = selectedFont;
     if (typeof window.saveSettings === 'function') {
         window.saveSettings(gameSettings);
+    } else {
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
     }
     
-    // Apply the font class to the body
-    document.body.className = document.body.className.replace(/\bhanzi-[^\s]+\b/g, '').trim();
+    // Remove old font classes (matches hanzi-opt1, hanzi-opt2, etc.)
+    document.body.className = document.body.className.replace(/\bhanzi-opt\d\b/g, '').trim();
+    
+    // Add new font class
     document.body.classList.add(`hanzi-${selectedFont}`);
     
-    console.log('Body classes after font change:', document.body.className);
-    
-    // Update all visible Chinese characters
-    updateCharacterDisplay();
-    
-    // Update font preview
+    // Update live preview
     updateFontPreview();
+    
+    // Force update of characters on screen
+    updateCharacterDisplay();
 }
 
 function updateFontPreview() {
-    const select = document.getElementById('hanziFontSelect');
     const preview = document.getElementById('fontPreview');
+    const select = document.getElementById('hanziFontSelect');
     
-    if (!select || !preview) {
-        console.log('Font preview elements not found');
-        return;
+    if (!preview || !select) return;
+    
+    // Update text based on Traditional/Simplified mode
+    // (This ensures the user sees the correct character variant in the preview)
+    const sampleText = useTraditional ? "讓我們一起學習！" : "让我们一起学习！";
+    preview.textContent = sampleText;
+    
+    // The font family is handled automatically by the body class (hanzi-optX) 
+    // defined in fonts.css, so we don't need to manually set style.fontFamily here.
+}
+
+// Ensure this function correctly toggles the body class for CSS variables to work
+function toggleTraditional() {
+    useTraditional = !useTraditional;
+    gameSettings.ui.traditional = useTraditional;
+    
+    // Toggle body class to drive CSS variable selection in fonts.css
+    document.body.classList.toggle('use-traditional', !!useTraditional);
+    
+    updateSettingsToggles();
+    updateCharacterDisplay();
+    updateFontPreview(); // Update preview text immediately
+    
+    // Save settings
+    if (typeof window.saveSettings === 'function') {
+        window.saveSettings(gameSettings);
+    } else {
+        localStorage.setItem('gameSettings', JSON.stringify(gameSettings));
     }
-    
-    const selectedFont = select.value;
-    console.log('Updating font preview to:', selectedFont);
-    
-    // Remove any existing font classes from preview
-    preview.className = 'font-preview-text';
-    // Apply the selected font class to preview (body's .use-traditional controls variant)
-    preview.classList.add(`hanzi-${selectedFont}`);
-    
-    // Debug: Check if the class was applied
-    console.log('Preview element classes:', preview.className);
-    console.log('Body classes:', document.body.className);
-    
-    // Force a reflow to ensure the font change is applied
-    preview.offsetHeight;
 }
 
 function updateCharacterDisplay() {

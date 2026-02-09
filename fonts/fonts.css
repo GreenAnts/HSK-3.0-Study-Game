@@ -1,0 +1,45 @@
+/* fonts/fonts.css */
+
+/* Define Font Families */
+:root {
+    /* DEFAULT (Simplified Mode) */
+    /* 1. Standard / Computer */
+    --font-standard: 'Noto Sans SC', sans-serif;
+    /* 2. Handwriting / Kaiti */
+    --font-handwriting: 'LXGW WenKai Mono TC', 'KaiTi', cursive;
+    /* 3. Blocked / Artistic (Ma Shan Zheng is a heavy calligraphic style) */
+    --font-blocked: 'Ma Shan Zheng', cursive;
+}
+
+/* TRADITIONAL Mode Overrides */
+body.use-traditional {
+    /* 1. Standard / Computer */
+    --font-standard: 'Noto Sans TC', sans-serif;
+    /* 2. Handwriting / Kaiti */
+    --font-handwriting: 'LXGW WenKai Mono TC', 'KaiTi', cursive;
+    /* 3. Blocked / Serif (Noto Serif is a classic blocked style for Trad) */
+    --font-blocked: 'Noto Serif TC', serif;
+}
+
+/* --- Application Classes --- */
+
+/* Option 1: Standard (Computer Typescript) */
+body.hanzi-opt1 .chinese-char, 
+body.hanzi-opt1 .font-preview-text,
+body.hanzi-opt1 .hanzi-quiz-character {
+    font-family: var(--font-standard) !important;
+}
+
+/* Option 2: Handwriting (Clean Standard Handwriting) */
+body.hanzi-opt2 .chinese-char, 
+body.hanzi-opt2 .font-preview-text,
+body.hanzi-opt2 .hanzi-quiz-character {
+    font-family: var(--font-handwriting) !important;
+}
+
+/* Option 3: Blocked (Square/Artistic Style) */
+body.hanzi-opt3 .chinese-char, 
+body.hanzi-opt3 .font-preview-text,
+body.hanzi-opt3 .hanzi-quiz-character {
+    font-family: var(--font-blocked) !important;
+}

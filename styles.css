@@ -2043,7 +2043,7 @@ span:not(.chinese-character):not(.character):not(.word-chinese) {
     .voice-replay-btn {
         width: 45px;
         height: 45px;
-        bottom: 15px;
+        bottom: 35px;
         right: 15px;
         font-size: 1.1rem;
     }
@@ -2052,7 +2052,7 @@ span:not(.chinese-character):not(.character):not(.word-chinese) {
     .hanzi-quiz-btn {
         width: 45px;
         height: 45px;
-        bottom: 15px;
+        bottom: 35px;
         right: 70px;
         font-size: 1.1rem;
     }
